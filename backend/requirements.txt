@@ -10,4 +10,5 @@ manim
 docker
 python-multipart
 anthropic
+google-genai
 httpx

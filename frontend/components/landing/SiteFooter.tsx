@@ -4,11 +4,11 @@
  */
 
 const QUICK_LINKS = [
-  { label: "Home", href: "#top" },
-  { label: "Categories", href: "#categories" },
-  { label: "Showcase", href: "#showcase" },
-  { label: "About", href: "#about" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", href: "/" },
+  { label: "Library", href: "/library" },
+  { label: "Showcase", href: "/#showcase" },
+  { label: "About", href: "/#about" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 const SOCIAL = ["Twitter", "GitHub", "YouTube", "Discord"];
@@ -25,7 +25,7 @@ export function SiteFooter() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-paper/70 transition-colors hover:text-paper"
+                    className="text-sm font-medium text-paper/70 transition-colors hover:text-paper"
                   >
                     {link.label}
                   </a>
@@ -41,7 +41,7 @@ export function SiteFooter() {
                 <li key={name}>
                   <a
                     href="#"
-                    className="text-sm text-paper/70 transition-colors hover:text-paper"
+                    className="text-sm font-medium text-paper/70 transition-colors hover:text-paper"
                   >
                     {name}
                   </a>
@@ -52,7 +52,7 @@ export function SiteFooter() {
 
           <div id="about">
             <p className="tag mb-5 text-paper/40">Contact</p>
-            <p className="text-sm leading-relaxed text-paper/70">
+            <p className="text-sm font-medium leading-relaxed text-paper/70">
               hello@placeholder.dev
               <br />
               Placeholder Street 00
@@ -64,12 +64,12 @@ export function SiteFooter() {
           <div>
             <p className="tag mb-5 text-paper/40">Explore</p>
             <a
-              href="#showcase"
-              className="text-sm text-highlight/70 transition-colors hover:text-highlight"
+              href="/library"
+              className="text-sm font-medium text-highlight/80 transition-colors hover:text-highlight"
             >
               Browse examples
             </a>
-            <p className="mt-5 max-w-[22ch] text-sm leading-relaxed text-paper/50">
+            <p className="mt-5 max-w-[22ch] text-sm font-medium leading-relaxed text-paper/50">
               Placeholder line about what the product does, kept short.
             </p>
           </div>
@@ -86,7 +86,7 @@ export function SiteFooter() {
       <div className="mt-14 overflow-hidden px-4">
         <p
           aria-hidden="true"
-          className="-mb-[0.18em] whitespace-nowrap text-center font-display leading-[0.8] text-paper"
+          className="-mb-[0.18em] whitespace-nowrap text-center font-display font-bold leading-[0.8] text-paper"
           style={{ fontSize: "clamp(3.4rem, 15.5vw, 15rem)" }}
         >
           2DAnimator

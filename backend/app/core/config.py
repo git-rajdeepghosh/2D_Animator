@@ -23,8 +23,12 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
 
     # --- LLM / codegen ---
+    # Manim scene code (Anthropic).
     llm_api_key: str = "changeme"
     llm_model: str = "claude-sonnet-5"
+    # Narration script (Gemini).
+    gemini_api_key: str = "changeme"
+    gemini_model: str = "gemini-2.5-flash"
 
     # --- Text-to-speech (voiceover) ---
     tts_api_key: str = "changeme"

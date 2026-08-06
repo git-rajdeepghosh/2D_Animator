@@ -12,12 +12,15 @@ const sans = localFont({
   variable: "--font-sans",
 });
 
+// Cormorant Garamond rather than Instrument Serif: the latter ships a single
+// 400 cut, so any 600/700 heading would be synthesised by the browser. These
+// are the real variable cuts, 300–700, roman and italic.
 const display = localFont({
   src: [
-    { path: "./fonts/InstrumentSerif-400.woff2", style: "normal" },
-    { path: "./fonts/InstrumentSerif-400-italic.woff2", style: "italic" },
+    { path: "./fonts/CormorantGaramond-var.woff2", style: "normal" },
+    { path: "./fonts/CormorantGaramond-var-italic.woff2", style: "italic" },
   ],
-  weight: "400",
+  weight: "300 700",
   display: "swap",
   variable: "--font-display",
 });

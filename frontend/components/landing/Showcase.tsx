@@ -34,8 +34,8 @@ type Work = {
   caption: string;
   Thumb: (props: { className?: string }) => JSX.Element;
   panel: string;
-  /** Corner tag fill — always a different pastel to the panel it sits on. */
-  tint: string;
+  /** Inner thumbnail panel: the same hue as the card, a step deeper. */
+  inner: string;
   aspect: string;
   /** Desktop placement, as percentages of the stage. */
   x: string;
@@ -54,14 +54,14 @@ const WORKS: Work[] = [
     tag: "Featured",
     caption: "Why π shows up in a circle's area",
     Thumb: MathsThumb,
-    panel: "bg-pastel-blue",
-    tint: "bg-pastel-amber",
+    panel: "bg-card-blue",
+    inner: "bg-card-blue-deep",
     aspect: "aspect-[4/3]",
-    x: "1%",
-    y: "2%",
-    w: "23%",
-    ux: "-110px",
-    uy: "-112px",
+    x: "14%",
+    y: "10%",
+    w: "22%",
+    ux: "-190px",
+    uy: "-170px",
     rot: "-1.6deg",
     delay: "0ms",
   },
@@ -69,14 +69,14 @@ const WORKS: Work[] = [
     tag: "Featured",
     caption: "A binary search, one step at a time",
     Thumb: GridThumb,
-    panel: "bg-pastel-blush",
-    tint: "bg-pastel-blue",
+    panel: "bg-card-blush",
+    inner: "bg-card-blush-deep",
     aspect: "aspect-[16/10]",
-    x: "74%",
-    y: "0%",
-    w: "25%",
-    ux: "112px",
-    uy: "-106px",
+    x: "62%",
+    y: "7%",
+    w: "24%",
+    ux: "185px",
+    uy: "-180px",
     rot: "1.4deg",
     delay: "80ms",
   },
@@ -84,14 +84,14 @@ const WORKS: Work[] = [
     tag: "New",
     caption: "Reading a distribution properly",
     Thumb: GraphsThumb,
-    panel: "bg-pastel-amber",
-    tint: "bg-pastel-sage",
+    panel: "bg-card-amber",
+    inner: "bg-card-amber-deep",
     aspect: "aspect-[4/3]",
-    x: "0%",
+    x: "4%",
     y: "40%",
-    w: "18%",
-    ux: "-157px",
-    uy: "-8px",
+    w: "17%",
+    ux: "-255px",
+    uy: "5px",
     rot: "2deg",
     delay: "160ms",
   },
@@ -99,14 +99,14 @@ const WORKS: Work[] = [
     tag: "Popular",
     caption: "Orbital resonance, slowed right down",
     Thumb: OrbitThumb,
-    panel: "bg-pastel-blue",
-    tint: "bg-pastel-blush",
+    panel: "bg-card-blue",
+    inner: "bg-card-blue-deep",
     aspect: "aspect-[4/3]",
-    x: "82%",
+    x: "79%",
     y: "43%",
-    w: "18%",
-    ux: "157px",
-    uy: "10px",
+    w: "17%",
+    ux: "255px",
+    uy: "25px",
     rot: "-1.8deg",
     delay: "120ms",
   },
@@ -114,14 +114,14 @@ const WORKS: Work[] = [
     tag: "Selected",
     caption: "Momentum, before and after impact",
     Thumb: PhysicsThumb,
-    panel: "bg-pastel-sage",
-    tint: "bg-pastel-blush",
+    panel: "bg-card-sage",
+    inner: "bg-card-sage-deep",
     aspect: "aspect-[16/10]",
-    x: "11%",
-    y: "70%",
-    w: "26%",
-    ux: "-95px",
-    uy: "104px",
+    x: "18%",
+    y: "66%",
+    w: "23%",
+    ux: "-150px",
+    uy: "170px",
     rot: "1.5deg",
     delay: "220ms",
   },
@@ -129,14 +129,14 @@ const WORKS: Work[] = [
     tag: "Staff pick",
     caption: "How a voiceover gets timed to a scene",
     Thumb: WaveThumb,
-    panel: "bg-pastel-blush",
-    tint: "bg-pastel-sage",
+    panel: "bg-card-blush",
+    inner: "bg-card-blush-deep",
     aspect: "aspect-[4/3]",
-    x: "64%",
-    y: "72%",
-    w: "24%",
-    ux: "91px",
-    uy: "100px",
+    x: "58%",
+    y: "69%",
+    w: "22%",
+    ux: "145px",
+    uy: "185px",
     rot: "-2deg",
     delay: "280ms",
   },
@@ -172,21 +172,23 @@ export function Showcase() {
     return () => observer.disconnect();
   }, []);
 
+  // Extra room below on lg: the ring opens out past the stage box and the
+  // section clips, so the lowest card needs somewhere to travel into.
   return (
     <section
       id="showcase"
       ref={sectionRef}
-      className="overflow-hidden bg-ink py-24 sm:py-32"
+      className="overflow-hidden bg-ink py-24 sm:py-32 lg:pb-48"
     >
       <div className="mx-auto max-w-6xl px-6">
         {/* Heading, above the grid on small screens and dead centre of the
             ring on large ones. */}
         <div className="mx-auto mb-16 max-w-2xl text-center lg:hidden">
           <p className="tag mb-5 text-paper/40">Showcase</p>
-          <h2 className="font-display text-[clamp(2.1rem,5vw,3.6rem)] leading-[1.05] text-paper">
+          <h2 className="font-display text-[clamp(2.1rem,5vw,3.6rem)] font-bold leading-[1.05] text-paper">
             A few things people have made
           </h2>
-          <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-paper/50 sm:text-base">
+          <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-paper/55 sm:text-base">
             Placeholder subheading. Every one of these started as a single
             sentence typed into the bar above.
           </p>
@@ -194,7 +196,7 @@ export function Showcase() {
 
         <div
           ref={stageRef}
-          className={`relative grid grid-cols-1 gap-10 sm:grid-cols-2 lg:block lg:h-[860px] ${
+          className={`relative grid grid-cols-1 gap-10 sm:grid-cols-2 lg:block lg:h-[940px] ${
             settled ? "is-settled" : ""
           }`}
         >
@@ -202,10 +204,10 @@ export function Showcase() {
             {/* inline-block so the label's box hugs its text — as a full-width
                 block it reaches across the whole ring. */}
             <p className="tag mb-5 inline-block text-paper/40">Showcase</p>
-            <h2 className="mx-auto max-w-xl font-display text-[clamp(2.1rem,5vw,3.6rem)] leading-[1.05] text-paper">
+            <h2 className="mx-auto max-w-xl font-display text-[clamp(2.1rem,5vw,3.6rem)] font-bold leading-[1.05] text-paper">
               A few things people have made
             </h2>
-            <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-paper/50 sm:text-base">
+            <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-paper/55 sm:text-base">
               Placeholder subheading. Every one of these started as a single
               sentence typed into the bar above.
             </p>
@@ -227,19 +229,23 @@ export function Showcase() {
                 } as CSSProperties
               }
             >
+              {/* Light fill with the deeper tone of the same hue inset as a
+                  frame around the thumbnail. */}
               <div
-                className={`relative overflow-hidden rounded-2xl ${work.panel} ${work.aspect}`}
+                className={`relative overflow-hidden rounded-2xl p-2 ${work.panel} ${work.aspect}`}
               >
-                <work.Thumb className="absolute inset-0 h-full w-full text-paper" />
-
-                <span
-                  className={`tag absolute right-3 top-3 rounded-full px-2.5 py-1 text-paper ${work.tint}`}
+                <div
+                  className={`relative h-full w-full overflow-hidden rounded-xl ${work.inner}`}
                 >
+                  <work.Thumb className="absolute inset-0 h-full w-full text-ink/55" />
+                </div>
+
+                <span className="tag absolute right-4 top-4 z-10 rounded-full bg-ink px-2.5 py-1 text-paper">
                   {work.tag}
                 </span>
               </div>
 
-              <figcaption className="mt-4 text-sm leading-relaxed text-paper/70">
+              <figcaption className="mt-4 text-sm font-medium leading-relaxed text-paper/70">
                 {work.caption}
               </figcaption>
             </figure>

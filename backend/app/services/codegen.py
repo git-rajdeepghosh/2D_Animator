@@ -1,8 +1,9 @@
-# Prompt -> narration script -> Manim scene code (LLM-driven).
-#
-# Two LLM calls against the Anthropic Messages API:
-#   1. concept prompt      -> a short, timed narration script (source of truth)
-#   2. narration script    -> a single Manim Scene subclass that animates it
+# Prompt -> narration script -> Manim scene code. Two different providers, one
+# call each, no intermediate storyboard stage:
+#   1. concept prompt      -> narration script, via Gemini (fast/cheap; the
+#                              script is short, so a heavier model buys little)
+#   2. narration script    -> a single Manim Scene subclass, via Anthropic
+#                              (Claude is the stronger coder of the two)
 #
 # The generated code is constrained to a safe surface: it must subclass the
 # injected `ExplainerScene` base (see backend/manim/scenes/base.py) and is run
@@ -10,6 +11,8 @@
 from dataclasses import dataclass
 
 import anthropic
+from google import genai
+from google.genai import types as genai_types
 
 from app.core.config import settings
 
@@ -42,30 +45,32 @@ _CODE_SYSTEM = (
 
 @dataclass
 class Codegen:
-    """Wraps the Anthropic client with the two pipeline prompts."""
+    """Wraps both provider clients with the two pipeline prompts."""
 
     def __post_init__(self) -> None:
-        self._client = anthropic.Anthropic(api_key=settings.llm_api_key)
+        self._anthropic = anthropic.Anthropic(api_key=settings.llm_api_key)
+        self._gemini = genai.Client(api_key=settings.gemini_api_key)
 
     def narration_script(self, prompt: str) -> str:
-        """Turn a plain-language concept into a timed narration script."""
-        message = self._client.messages.create(
-            model=settings.llm_model,
-            max_tokens=1024,
-            system=_SCRIPT_SYSTEM,
-            thinking={"type": "adaptive"},
-            messages=[{"role": "user", "content": prompt}],
+        """Turn a plain-language concept into a timed narration script (Gemini)."""
+        response = self._gemini.models.generate_content(
+            model=settings.gemini_model,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=_SCRIPT_SYSTEM,
+                max_output_tokens=1024,
+            ),
         )
-        return _first_text(message).strip()
+        return (response.text or "").strip()
 
     def scene_code(self, narration: str) -> str:
-        """Generate a Manim scene that animates the narration.
+        """Generate a Manim scene that animates the narration (Anthropic).
 
         Uses streaming because scene code can approach the token cap and a
         non-streaming request risks an HTTP timeout.
         """
         parts: list[str] = []
-        with self._client.messages.stream(
+        with self._anthropic.messages.stream(
             model=settings.llm_model,
             max_tokens=8000,
             system=_CODE_SYSTEM,
@@ -82,13 +87,6 @@ class Codegen:
             if block.type == "text":
                 parts.append(block.text)
         return _strip_code_fences("".join(parts)).strip()
-
-
-def _first_text(message: anthropic.types.Message) -> str:
-    for block in message.content:
-        if block.type == "text":
-            return block.text
-    return ""
 
 
 def _strip_code_fences(text: str) -> str:

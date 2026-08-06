@@ -7,8 +7,19 @@
     scroll-behavior: smooth;
   }
 
+  /* Body copy and UI sit at 500, not 400 — at 400 Inter reads too light
+     against these backgrounds. Inter is loaded variable 100–900, so this is a
+     real weight, not a synthesised one. */
   body {
-    @apply bg-ink text-paper antialiased;
+    @apply bg-ink font-medium text-paper antialiased;
+  }
+
+  /* Cormorant Garamond is a delicate face; 600 is the floor for it to hold up
+     at display sizes. Individual headings raise this to 700. */
+  h1,
+  h2,
+  h3 {
+    @apply font-semibold;
   }
 
   /* Selection stays on-brand with the single highlight colour. */
@@ -21,7 +32,7 @@
   /* ( TAG ) — small uppercase mono label used for card overlays and
      column headings. Parentheses are drawn in, not typed. */
   .tag {
-    @apply font-mono text-[10px] uppercase tracking-tag;
+    @apply font-mono text-[10px] font-medium uppercase tracking-tag;
   }
 
   .tag::before {
@@ -33,7 +44,7 @@
   }
 
   .nav-link {
-    @apply rounded-full px-4 py-2 text-sm text-ink-600 transition-colors duration-200;
+    @apply rounded-full px-4 py-2 text-sm font-medium text-ink-600 transition-colors duration-200;
   }
 
   .nav-link:hover {
