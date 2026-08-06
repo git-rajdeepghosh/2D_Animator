@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink text-paper antialiased;
+  }
+
+  /* Selection stays on-brand with the single highlight colour. */
+  ::selection {
+    @apply bg-highlight text-ink;
+  }
+}
+
+@layer components {
+  /* ( TAG ) — small uppercase mono label used for card overlays and
+     column headings. Parentheses are drawn in, not typed. */
+  .tag {
+    @apply font-mono text-[10px] uppercase tracking-tag;
+  }
+
+  .tag::before {
+    content: "( ";
+  }
+
+  .tag::after {
+    content: " )";
+  }
+
+  .nav-link {
+    @apply rounded-full px-4 py-2 text-sm text-ink-600 transition-colors duration-200;
+  }
+
+  .nav-link:hover {
+    @apply bg-ink text-paper;
+  }
+}
+
+@layer utilities {
+  .bg-dot-grid {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(245, 244, 240, 0.14) 1px,
+      transparent 0
+    );
+    background-size: 26px 26px;
+  }
+
+  .bg-dot-grid-dark {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(26, 26, 25, 0.12) 1px,
+      transparent 0
+    );
+    background-size: 26px 26px;
+  }
+}
+
+/* Section 3 cards fade in once, then take their position from the section's
+   scroll progress. Only opacity is transitioned — the radial offset has to
+   track the scroll frame for frame, so easing it would make it lag behind. */
+.radial-card {
+  opacity: 0;
+  transition: opacity 900ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  transition-delay: var(--delay, 0ms);
+}
+
+.is-settled .radial-card {
+  opacity: 1;
+}
+
+/* The ring only exists on large screens; below that the cards are a plain
+   grid and have nowhere to project to. */
+@media (min-width: 1024px) {
+  /* Strictly outward: --p only ever adds to the resting radius. Centring the
+     push instead would pull the cards inward on the way in, straight through
+     the heading sitting in the middle of the ring. */
+  .radial-card {
+    transform: translate(
+        calc(var(--ux) * var(--p, 0)),
+        calc(var(--uy) * var(--p, 0))
+      )
+      rotate(var(--rot, 0deg));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* Kill every entrance and loop; leave everything in its resting state.
+     `useSectionProgress` pins --p to 0.5 under the same query, which lands
+     the radial cards on their designed arrangement with no scroll linkage. */
+  .radial-card,
+  [class*="animate-"] {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .radial-card {
+    opacity: 1;
+  }
+}

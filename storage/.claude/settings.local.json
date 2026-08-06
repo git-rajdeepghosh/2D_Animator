@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(npm install *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet psycopg2-binary)",
+      "Bash(.venv/Scripts/python.exe -c \"import app.main; print\\('app.main OK; routes:', sorted\\(r.path for r in app.main.app.routes if hasattr\\(r,'path'\\)\\)\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"import worker.tasks.render; from worker.celery_app import celery_app; print\\('worker OK; task registered:', 'render_video' in celery_app.tasks\\)\")",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(python3 -c \"import reportlab; print\\(reportlab.Version\\)\")",
+      "Bash(python -c \"import reportlab; print\\(reportlab.Version\\)\")",
+      "Bash(python -m pip install --quiet reportlab)",
+      "Bash(python -c \"import reportlab; print\\('reportlab', reportlab.Version, 'OK'\\)\")",
+      "Bash(python build_summary_pdf.py)",
+      "Bash(python -c ' *)",
+      "Bash(python -m pip install --quiet pypdf)",
+      "Read(//c/Users/KIIT/OneDrive/Desktop/**)",
+      "Bash(npm create *)",
+      "Bash(rm -rf src/assets)",
+      "Bash(rm -f public/icons.svg)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(ls -la \"C:/Users/KIIT/Videos/Screen Recordings/\")",
+      "PowerShell($paths = @\\(\"C:\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\",\"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\"\\); foreach\\($p in $paths\\){ if\\(Test-Path $p\\){ $p } }; Get-Command ffmpeg,python,py -ErrorAction SilentlyContinue | Select-Object Name,Source)",
+      "PowerShell(python -m pip install --quiet imageio-ffmpeg 2>&1)",
+      "PowerShell(python -c \"import imageio_ffmpeg; print\\(imageio_ffmpeg.get_ffmpeg_exe\\(\\)\\)\")",
+      "Bash(C:/Users/KIIT/AppData/Local/Programs/Python/Python313/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe -hide_banner -loglevel error -i 'C:/Users/KIIT/Videos/Screen Recordings/Screen Recording 2026-08-05 210237.mp4' -vf fps=1.5,scale=760:-1 -q:v 4 C:/Users/KIIT/AppData/Local/Temp/claude/C--Users-KIIT-OneDrive-Desktop-2DAnimator/6926875b-089b-43a6-9bfb-611d642a8391/scratchpad/frames/a_%02d.jpg)",
+      "Bash(C:/Users/KIIT/AppData/Local/Programs/Python/Python313/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe -hide_banner -loglevel error -i 'C:/Users/KIIT/Videos/Screen Recordings/Screen Recording 2026-08-05 210346.mp4' -vf fps=2,scale=760:-1 -q:v 4 C:/Users/KIIT/AppData/Local/Temp/claude/C--Users-KIIT-OneDrive-Desktop-2DAnimator/6926875b-089b-43a6-9bfb-611d642a8391/scratchpad/frames/b_%02d.jpg)",
+      "Bash(C:/Users/KIIT/AppData/Local/Programs/Python/Python313/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe -hide_banner -loglevel error -i 'C:/Users/KIIT/Videos/Screen Recordings/Screen Recording 2026-08-05 210537.mp4' -vf fps=1.2,scale=760:-1 -q:v 4 C:/Users/KIIT/AppData/Local/Temp/claude/C--Users-KIIT-OneDrive-Desktop-2DAnimator/6926875b-089b-43a6-9bfb-611d642a8391/scratchpad/frames/c_%02d.jpg)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 8 https://fonts.googleapis.com/css2?family=Inter)",
+      "Bash(python -)",
+      "Bash(echo \"--- TSC EXIT: $? ---\")",
+      "Bash(npx next *)",
+      "Bash(C:/Users/KIIT/AppData/Local/Programs/Python/Python313/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe -hide_banner -loglevel error -t 3.5 -i 'C:/Users/KIIT/Videos/Screen Recordings/Screen Recording 2026-08-05 210346.mp4' -vf fps=6,scale=620:-1 -q:v 4 C:/Users/KIIT/AppData/Local/Temp/claude/C--Users-KIIT-OneDrive-Desktop-2DAnimator/6926875b-089b-43a6-9bfb-611d642a8391/scratchpad/f2/intro_%02d.jpg)",
+      "Bash(C:/Users/KIIT/AppData/Local/Programs/Python/Python313/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe -hide_banner -loglevel error -ss 1.0 -t 8 -i 'C:/Users/KIIT/Videos/Screen Recordings/Screen Recording 2026-08-05 210537.mp4' -vf fps=3,scale=680:-1 -q:v 4 C:/Users/KIIT/AppData/Local/Temp/claude/C--Users-KIIT-OneDrive-Desktop-2DAnimator/6926875b-089b-43a6-9bfb-611d642a8391/scratchpad/f3/rad_%02d.jpg)",
+      "Bash(echo \"--- exit $? ---\")",
+      "Bash(curl -s http://localhost:3000 -o \"C:/Users/KIIT/AppData/Local/Temp/claude/C--Users-KIIT-OneDrive-Desktop-2DAnimator/6926875b-089b-43a6-9bfb-611d642a8391/scratchpad/home.html\")"
+    ]
+  }
+}

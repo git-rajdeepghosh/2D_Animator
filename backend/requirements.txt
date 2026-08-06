@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+celery[redis]
+redis
+sqlalchemy
+psycopg2-binary
+pydantic
+pydantic-settings
+manim
+docker
+python-multipart
+anthropic
+httpx

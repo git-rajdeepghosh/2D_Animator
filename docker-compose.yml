@@ -1,0 +1,47 @@
+# Local dev stack. The sandbox image is built here but launched per-job by the
+# worker (via the mounted Docker socket), not run as a long-lived service.
+version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    ports: ["3000:3000"]
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on: [api]
+
+  api:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports: ["8000:8000"]
+    env_file: [.env]
+    depends_on: [db, redis]
+
+  worker:
+    build: ./backend
+    command: celery -A worker.celery_app worker --loglevel=info
+    env_file: [.env]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # launch render sandbox
+      - ./storage/renders:/data/renders
+    depends_on: [redis, api]
+
+  sandbox-image:
+    build: ./sandbox
+    image: 2danimator-sandbox:latest
+    command: ["true"]        # build-only; worker launches containers per job
+    profiles: ["build"]
+
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=animator
+      - POSTGRES_PASSWORD=animator
+      - POSTGRES_DB=animator
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+
+  redis:
+    image: redis:7
+
+volumes:
+  pgdata:
