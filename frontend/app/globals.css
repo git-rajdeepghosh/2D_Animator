@@ -117,4 +117,11 @@
   .radial-card {
     opacity: 1;
   }
+
+  /* The rule above would otherwise freeze the intro curtain at full opacity,
+     leaving an opaque sheet over the entire site permanently. There is no
+     reveal to watch under reduced motion, so drop it outright. */
+  .animate-curtain {
+    display: none !important;
+  }
 }

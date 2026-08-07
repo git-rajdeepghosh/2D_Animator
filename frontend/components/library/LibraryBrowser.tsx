@@ -3,8 +3,8 @@ import { PlayGlyph } from "@/components/landing/PlayGlyph";
 import { COLLECTIONS } from "./collections";
 
 /**
- * `/library` — every video, grouped by the collection it belongs to. This is
- * the browsing page the homepage section only teases.
+ * `/library` — the public catalogue, grouped by collection. Open to everyone;
+ * a reader's own generated videos live behind auth at `/my-videos`.
  */
 export function LibraryBrowser() {
   const total = COLLECTIONS.reduce((n, c) => n + c.videos.length, 0);

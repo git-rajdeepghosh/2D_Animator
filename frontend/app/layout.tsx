@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Suspense } from "react";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { SignInIntent } from "@/components/auth/SignInIntent";
 import "./globals.css";
 
 // Self-hosted rather than next/font/google: the build machine sits behind a
@@ -48,7 +52,17 @@ export default function RootLayout({
       lang="en"
       className={`${sans.variable} ${display.variable} ${mono.variable}`}
     >
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <AuthProvider>
+          {children}
+          {/* Reads `?signin=1` so a guard can bounce someone here and have the
+              modal already open, with their destination remembered. */}
+          <Suspense fallback={null}>
+            <SignInIntent />
+          </Suspense>
+          <AuthModal />
+        </AuthProvider>
+      </body>
     </html>
   );
 }

@@ -57,6 +57,18 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(12px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        fadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        // The intro curtain lifts on a CSS timer rather than from an effect.
+        // It is an opaque sheet over the whole site, so if any script fails
+        // the page must still become visible on its own. Cut, not fade: at
+        // this point the shape covers the screen and the swap is invisible.
+        curtainLift: {
+          "0%, 59.9%": { opacity: "1" },
+          "60%, 100%": { opacity: "0", visibility: "hidden" },
+        },
         orbExpand: {
           from: { transform: "scale(1)" },
           to: { transform: "scale(72)" },
@@ -75,6 +87,10 @@ const config: Config = {
         },
       },
       animation: {
+        "fade-in": "fadeIn 180ms ease both",
+        // Duration must match INTRO_MS, and the cut point CURTAIN_LIFT, in
+        // introShape.ts.
+        curtain: "curtainLift 2400ms linear forwards",
         "hero-in": "heroIn 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both",
         "orb-expand": "orbExpand 700ms cubic-bezier(0.6, 0, 0.9, 0.6) forwards",
         drift: "drift 6s ease-in-out infinite",

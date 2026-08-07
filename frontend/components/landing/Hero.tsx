@@ -4,151 +4,135 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PlayGlyph } from "./PlayGlyph";
 import { SiteNav } from "./SiteNav";
+import { hasSignInIntent } from "@/components/auth/SignInIntent";
+import {
+  FALLBACK_PEAK_WIDTH,
+  INTRO_MS,
+  RESTING_FRAME,
+  SWOOSH_PATH,
+  introFrameAt,
+  measurePeakWidth,
+} from "./introShape";
 
 /**
- * Section 1 — the intro sequence.
+ * Section 1 — the intro reveal.
  *
- * The hero text is in place from the first frame and never moves: it fades up
- * once and then stays put. Alongside it a squiggly line draws itself across
- * the screen with a yellow play button riding its leading edge, and once the
- * head reaches the end the tail chases it down the *same* path — the line
- * retraces itself out of existence rather than fading or redrawing.
+ * A bold cursive swoosh flies in from off-canvas top-left, thickens into a
+ * ribbon, floods the viewport in off-white, then recedes back up its own path
+ * and comes to rest as a small mark in the corner. Its retreat is literally
+ * what uncovers the page: a curtain hides the layout at the start and is
+ * dropped while the swoosh is wide enough to cover the screen unaided, so by
+ * the time it pulls back there is nothing between the reader and the homepage.
  *
- * Both ends are two offsets into one dash pattern, so the retrace is
- * mathematically the same curve as the draw; there is no second geometry that
- * could drift out of alignment.
+ * The shape is one fixed path whose stroke width animates — see
+ * `introShape.ts` for why that, and not a morphing outline, is what the
+ * reference is actually doing.
  *
- * The dot and the line's head are driven by one rAF loop rather than by CSS
- * animations, so they stay locked together frame for frame regardless of how
- * the SVG is scaled.
+ * The hero copy never moves and never changes colour in code. It sits above
+ * the swoosh with `mix-blend-mode: difference`, so it renders white over the
+ * dark backdrop and flips to black wherever the off-white ribbon passes
+ * beneath it.
  */
 
-// The final point sits at roughly 80% of the viewBox height so the dot lands
-// on the search bar's play button rather than below it.
-const SQUIGGLE =
-  "M -90 210 C 150 96 318 342 498 272 C 678 202 716 58 900 132 C 1084 206 1158 424 1330 352 C 1502 280 1524 606 1232 646 C 940 686 898 470 700 522 C 520 566 566 686 720 725";
+/**
+ * Module scope, so it survives client-side navigation but resets on a real
+ * load. That gives "plays on every refresh, never on an internal route
+ * change" without touching storage.
+ */
+let hasPlayedThisLoad = false;
 
-const DRAW_MS = 1900;
-/** A beat at full length before the tail sets off. */
-const DWELL_MS = 420;
-const RETRACE_MS = 1500;
 const HOLD_MS = 2600;
 const EXPAND_MS = 640;
 
-type Phase = "drawing" | "retracing" | "settle" | "docked" | "expanding";
-
-const easeInOutCubic = (t: number) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-const easeInOutQuart = (t: number) =>
-  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+type Phase = "intro" | "settle" | "docked" | "expanding";
 
 export function Hero() {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>("drawing");
+
+  const [phase, setPhase] = useState<Phase>(() =>
+    hasPlayedThisLoad ? "settle" : "intro",
+  );
+  // Rendered only on a genuine page load. It hides itself on a CSS timer, so
+  // no effect has to run for the page to become visible — see `animate-curtain`.
+  const [curtain] = useState(() => !hasPlayedThisLoad);
 
   const pathRef = useRef<SVGPathElement>(null);
-  const dotRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-
-  // While the reader is typing we leave the bar alone; docking re-arms on blur.
   const [focused, setFocused] = useState(false);
   const [dockNonce, setDockNonce] = useState(0);
 
+  const intro = phase === "intro";
   const docked = phase === "docked" || phase === "expanding";
-  /** The dot rides the head of the line and is handed to the bar at the end. */
-  const dotRiding = phase === "drawing" || phase === "retracing";
 
-  /* One loop covers draw, dwell and retrace. `pathLength` is normalised to 1,
-     so head and tail are both plain 0→1 numbers along the same curve. */
+  /* The morph.
+   *
+   * The completion flag is set when the run *finishes*, never on entry. Under
+   * StrictMode React mounts twice — effect, cleanup, effect — so an effect that
+   * bailed on a flag it had already set would cancel its own loop and never
+   * restart it, stranding the page behind the curtain. */
   useEffect(() => {
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
     const path = pathRef.current;
-    const dot = dotRef.current;
-    const stage = stageRef.current;
 
-    if (prefersReduced || !path || !dot || !stage) {
-      setPhase("settle");
+    /** The only two things that animate: how much is painted, and how thick. */
+    const paint = ({ head, width }: { head: number; width: number }) => {
+      if (!path) return;
+      path.style.strokeDasharray = `${head} 1`;
+      path.style.strokeWidth = String(width);
+    };
+
+    const finish = () => {
+      hasPlayedThisLoad = true;
+      setPhase((p) => (p === "intro" ? "settle" : p));
+    };
+
+    // Already played earlier in this page load: a client-side navigation back
+    // to `/` remounts the hero, and the reveal is a load-time event only.
+    if (hasPlayedThisLoad) {
+      paint(RESTING_FRAME);
+      setPhase((p) => (p === "intro" ? "settle" : p));
       return;
     }
 
-    const total = path.getTotalLength();
-    const ctm = path.getScreenCTM();
-    const stageRect = stage.getBoundingClientRect();
-    const point = path.ownerSVGElement?.createSVGPoint();
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (!ctm || !point) {
-      setPhase("settle");
+    // A guard bounced someone here to sign in. Playing the reveal underneath
+    // the modal they were sent for would just be in the way.
+    if (!path || reduced || hasSignInIntent()) {
+      paint(RESTING_FRAME);
+      finish();
       return;
     }
 
-    const TOTAL_MS = DRAW_MS + DWELL_MS + RETRACE_MS;
+    // How thick the stroke has to get to cover this particular window,
+    // measured once rather than guessed: a corner-to-corner path leaves the
+    // opposite corners furthest from the curve, and how far that is depends on
+    // the viewport's size and aspect.
+    const section = path.ownerSVGElement?.parentElement;
+    const peak = section
+      ? measurePeakWidth(path, section.getBoundingClientRect())
+      : FALLBACK_PEAK_WIDTH;
+
     let frame = 0;
-    // Clock starts on the first delivered frame, not at mount, so a tab that
-    // is restored mid-intro still plays the whole thing rather than jumping.
     let start = 0;
 
-    // rAF is throttled to a standstill in a background tab. Without this the
-    // line would sit half-drawn and the CTA would never arrive, so force the
-    // resting state if the sequence hasn't finished in time.
-    const safety = setTimeout(
-      () => setPhase((p) => (p === "drawing" || p === "retracing" ? "settle" : p)),
-      TOTAL_MS + 1400,
-    );
-
-    const moveDot = (at: number) => {
-      const p = path.getPointAtLength(at * total);
-      point.x = p.x;
-      point.y = p.y;
-      const screen = point.matrixTransform(ctm);
-      dot.style.transform = `translate3d(${screen.x - stageRect.left}px, ${
-        screen.y - stageRect.top
-      }px, 0) translate(-50%, -50%)`;
-    };
-
-    let announced: Phase = "drawing";
-    const announce = (next: Phase) => {
-      if (announced === next) return;
-      announced = next;
-      setPhase((p) => (p === "settle" || p === "docked" ? p : next));
-    };
+    // rAF is throttled to a standstill in a background tab, so the sequence
+    // needs a wall-clock backstop to reach its resting state either way.
+    const safety = setTimeout(() => {
+      cancelAnimationFrame(frame);
+      paint(RESTING_FRAME);
+      finish();
+    }, INTRO_MS + 1200);
 
     const tick = (now: number) => {
       if (!start) start = now;
-      const elapsed = now - start;
+      const t = Math.min(1, (now - start) / INTRO_MS);
 
-      // head — where the line ends; tail — where it begins. The visible line is
-      // everything between them.
-      let head = 1;
-      let tail = 0;
+      paint(introFrameAt(t, peak));
 
-      if (elapsed < DRAW_MS) {
-        head = easeInOutCubic(elapsed / DRAW_MS);
-        announce("drawing");
-      } else if (elapsed < DRAW_MS + DWELL_MS) {
-        head = 1;
-      } else {
-        const t = Math.min(1, (elapsed - DRAW_MS - DWELL_MS) / RETRACE_MS);
-        tail = easeInOutQuart(t);
-        announce("retracing");
-      }
-
-      // One dash the length of the drawn span, offset so only [tail, head]
-      // paints. Both ends index into the same curve, so the retrace runs back
-      // over precisely the stroke the draw laid down.
-      path.style.strokeDasharray = `${head - tail} 1`;
-      path.style.strokeDashoffset = `${-tail}`;
-
-      // The dot rides the head out and then holds at the end while the tail
-      // sweeps up to meet it, so the line retracts into the button rather than
-      // the dot snapping back to the start of the path.
-      moveDot(head);
-
-      if (elapsed < TOTAL_MS) {
+      if (t < 1) {
         frame = requestAnimationFrame(tick);
       } else {
-        announce("settle");
+        clearTimeout(safety);
+        finish();
       }
     };
 
@@ -158,6 +142,16 @@ export function Hero() {
       clearTimeout(safety);
     };
   }, []);
+
+  /* Nothing behind the intro should be reachable while it plays. */
+  useEffect(() => {
+    if (!intro) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [intro]);
 
   /* Once settled, hold a beat and then dock into the corner. */
   useEffect(() => {
@@ -183,61 +177,62 @@ export function Hero() {
   }, [phase, router]);
 
   return (
-    <section
-      id="top"
-      ref={stageRef}
-      className="relative min-h-screen overflow-hidden bg-ink"
-    >
-      {/* The line. Stretched to the section so the path lands predictably; the
-          squiggle is abstract enough that non-uniform scaling reads fine. */}
+    <section id="top" className="relative min-h-screen overflow-hidden bg-ink">
+      {/* Curtain: hides the layout until the shape has covered the screen. */}
+      {curtain && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 z-[70] animate-curtain bg-ink"
+        />
+      )}
+
+      {/* The swoosh. Absolute inside the hero, so once the intro is over it
+          stays put as the hero's decorative mark rather than following the
+          reader down the page.
+
+          It rides above everything while it is covering the screen, then drops
+          behind the content once it has settled — by then it is a small corner
+          mark and the swap is invisible. */}
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full"
+        className={`pointer-events-none absolute inset-0 h-full w-full ${
+          intro ? "z-[80]" : "z-0"
+        }`}
         viewBox="0 0 1440 900"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
         <path
           ref={pathRef}
-          d={SQUIGGLE}
+          d={SWOOSH_PATH}
           fill="none"
           stroke="#F5F4F0"
-          strokeWidth="1.6"
           strokeLinecap="round"
+          strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
           pathLength={1}
-          style={{ strokeDasharray: "0 1", strokeDashoffset: 0, opacity: 0.85 }}
+          style={
+            hasPlayedThisLoad && !intro
+              ? {
+                  strokeDasharray: `${RESTING_FRAME.head} 1`,
+                  strokeWidth: RESTING_FRAME.width,
+                }
+              : { strokeDasharray: "0 1", strokeWidth: 6 }
+          }
         />
       </svg>
 
-      {/* The dot rides whichever end of the line is currently moving. */}
-      <div
-        ref={dotRef}
-        aria-hidden="true"
-        className={`pointer-events-none absolute left-0 top-0 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-highlight text-ink transition-opacity duration-300 ${
-          dotRiding ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <PlayGlyph className="h-6 w-6 translate-x-[1px]" />
-      </div>
-
       <SiteNav />
 
-      {/* Hero copy. Fades up once on entry and then holds — the line moves
-          around it, it never moves with the line. */}
-      <div className="relative z-20 mx-auto flex min-h-screen max-w-5xl animate-hero-in flex-col items-center justify-center px-6 pb-40 text-center">
-        <p className="tag mb-8 text-paper/50">Manim-powered explainers</p>
-
-        {/* The vh term only bites on short, wide windows — without it the
-            headline grows on width alone and runs under the search bar. */}
+      {/* Hero copy. Dead centre, never moves, never has its colour set twice:
+          `difference` against whatever is behind it does all the work. */}
+      <div className="pointer-events-none relative z-[90] mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 pb-40 text-center mix-blend-difference">
         <h1 className="font-display text-[clamp(2.5rem,min(7.4vw,9.2vh),5.6rem)] font-bold leading-[1.02] text-paper">
           Turn any idea into a video.
           <br />
-          <span className="italic text-paper/75">
-            Type a topic, get an animation.
-          </span>
+          <span className="italic">Type a topic, get an animation.</span>
         </h1>
 
-        <p className="mt-8 max-w-xl text-base font-medium leading-relaxed text-paper/60 sm:text-lg">
+        <p className="mt-8 max-w-xl text-base font-medium leading-relaxed text-paper/80 sm:text-lg">
           Describe a concept in plain language. We write the script, animate it
           and lay the voiceover over the top — no timeline to learn.
         </p>
@@ -248,7 +243,7 @@ export function Hero() {
           the whole morph pivots around. */}
       <div
         className={`fixed z-40 flex items-center rounded-full transition-all duration-[750ms] [transition-timing-function:cubic-bezier(0.65,0,0.2,1)] ${
-          dotRiding ? "pointer-events-none opacity-0" : "opacity-100"
+          intro ? "pointer-events-none opacity-0" : "opacity-100"
         } ${
           docked
             ? "bottom-7 right-7 h-[72px] w-[72px] justify-center bg-transparent p-0"
@@ -276,7 +271,7 @@ export function Hero() {
               ? "pointer-events-none w-0 flex-none opacity-0"
               : "flex-1 opacity-100"
           }`}
-          tabIndex={docked ? -1 : 0}
+          tabIndex={docked || intro ? -1 : 0}
         />
 
         <button
@@ -299,7 +294,7 @@ export function Hero() {
       {phase === "expanding" && (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed inset-0 z-[70] overflow-hidden"
+          className="pointer-events-none fixed inset-0 z-[100] overflow-hidden"
         >
           <span className="absolute bottom-[36px] right-[36px] block h-14 w-14 animate-orb-expand rounded-full bg-highlight" />
         </div>

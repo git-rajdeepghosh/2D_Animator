@@ -15,15 +15,20 @@ import {
 /**
  * Section 3 — proof, not menu.
  *
- * The heading sits dead centre of the stage and the cards are ringed around
- * it. As the section travels up the viewport they push radially outward from
- * that centre, so the field opens up around the text rather than scrolling
- * past it.
+ * The heading sits dead centre of the stage with the cards ringed around it.
+ * As the section travels up the viewport they drive hard outward, clearing the
+ * viewport edges entirely by the time the section leaves — the ring opens up
+ * around the text rather than scrolling past it.
  *
  * Each card carries the outward vector for its own corner as `--ux`/`--uy`,
  * scaled by the section's inherited `--p`. The resting arrangement is the
  * tightest the ring ever gets, so the cards only ever open away from the
  * heading and never track back across it.
+ *
+ * The push is mostly horizontal by design. The section has to clip (otherwise
+ * cards leaving sideways would widen the page), so a large vertical component
+ * would slice cards in half against the section's own top and bottom edges
+ * while they were still on screen. Sideways they simply leave the frame.
  *
  * Below `lg` the absolute ring is dropped for a plain two-column grid with the
  * heading above it — a radial layout has nowhere to go on a phone.
@@ -57,11 +62,11 @@ const WORKS: Work[] = [
     panel: "bg-card-blue",
     inner: "bg-card-blue-deep",
     aspect: "aspect-[4/3]",
-    x: "14%",
-    y: "10%",
-    w: "22%",
-    ux: "-190px",
-    uy: "-170px",
+    x: "8%",
+    y: "6%",
+    w: "17%",
+    ux: "-430px",
+    uy: "-180px",
     rot: "-1.6deg",
     delay: "0ms",
   },
@@ -72,11 +77,11 @@ const WORKS: Work[] = [
     panel: "bg-card-blush",
     inner: "bg-card-blush-deep",
     aspect: "aspect-[16/10]",
-    x: "62%",
-    y: "7%",
-    w: "24%",
-    ux: "185px",
-    uy: "-180px",
+    x: "76%",
+    y: "4%",
+    w: "18%",
+    ux: "430px",
+    uy: "-170px",
     rot: "1.4deg",
     delay: "80ms",
   },
@@ -87,11 +92,11 @@ const WORKS: Work[] = [
     panel: "bg-card-amber",
     inner: "bg-card-amber-deep",
     aspect: "aspect-[4/3]",
-    x: "4%",
+    x: "1%",
     y: "40%",
-    w: "17%",
-    ux: "-255px",
-    uy: "5px",
+    w: "15%",
+    ux: "-420px",
+    uy: "-20px",
     rot: "2deg",
     delay: "160ms",
   },
@@ -102,11 +107,11 @@ const WORKS: Work[] = [
     panel: "bg-card-blue",
     inner: "bg-card-blue-deep",
     aspect: "aspect-[4/3]",
-    x: "79%",
+    x: "84%",
     y: "43%",
-    w: "17%",
-    ux: "255px",
-    uy: "25px",
+    w: "15%",
+    ux: "420px",
+    uy: "20px",
     rot: "-1.8deg",
     delay: "120ms",
   },
@@ -117,11 +122,11 @@ const WORKS: Work[] = [
     panel: "bg-card-sage",
     inner: "bg-card-sage-deep",
     aspect: "aspect-[16/10]",
-    x: "18%",
-    y: "66%",
-    w: "23%",
-    ux: "-150px",
-    uy: "170px",
+    x: "14%",
+    y: "71%",
+    w: "18%",
+    ux: "-440px",
+    uy: "200px",
     rot: "1.5deg",
     delay: "220ms",
   },
@@ -132,11 +137,11 @@ const WORKS: Work[] = [
     panel: "bg-card-blush",
     inner: "bg-card-blush-deep",
     aspect: "aspect-[4/3]",
-    x: "58%",
-    y: "69%",
-    w: "22%",
-    ux: "145px",
-    uy: "185px",
+    x: "70%",
+    y: "73%",
+    w: "17%",
+    ux: "450px",
+    uy: "190px",
     rot: "-2deg",
     delay: "280ms",
   },
@@ -172,13 +177,13 @@ export function Showcase() {
     return () => observer.disconnect();
   }, []);
 
-  // Extra room below on lg: the ring opens out past the stage box and the
-  // section clips, so the lowest card needs somewhere to travel into.
+  // Extra room above and below on lg: the ring opens past the stage box and
+  // the section clips, so the cards need somewhere to travel into.
   return (
     <section
       id="showcase"
       ref={sectionRef}
-      className="overflow-hidden bg-ink py-24 sm:py-32 lg:pb-48"
+      className="overflow-hidden bg-ink py-24 sm:py-32 lg:py-48"
     >
       <div className="mx-auto max-w-6xl px-6">
         {/* Heading, above the grid on small screens and dead centre of the
@@ -196,11 +201,11 @@ export function Showcase() {
 
         <div
           ref={stageRef}
-          className={`relative grid grid-cols-1 gap-10 sm:grid-cols-2 lg:block lg:h-[940px] ${
+          className={`relative grid grid-cols-1 gap-10 sm:grid-cols-2 lg:block lg:h-[860px] ${
             settled ? "is-settled" : ""
           }`}
         >
-          <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 hidden -translate-y-1/2 px-4 text-center lg:block">
+          <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 hidden -translate-y-1/2 px-4 text-center lg:block">
             {/* inline-block so the label's box hugs its text — as a full-width
                 block it reaches across the whole ring. */}
             <p className="tag mb-5 inline-block text-paper/40">Showcase</p>
@@ -240,12 +245,12 @@ export function Showcase() {
                   <work.Thumb className="absolute inset-0 h-full w-full text-ink/55" />
                 </div>
 
-                <span className="tag absolute right-4 top-4 z-10 rounded-full bg-ink px-2.5 py-1 text-paper">
+                <span className="tag absolute right-3 top-3 z-10 rounded-full bg-ink px-2 py-0.5 text-[9px] text-paper">
                   {work.tag}
                 </span>
               </div>
 
-              <figcaption className="mt-4 text-sm font-medium leading-relaxed text-paper/70">
+              <figcaption className="mt-3 text-xs font-medium leading-relaxed text-paper/70">
                 {work.caption}
               </figcaption>
             </figure>
