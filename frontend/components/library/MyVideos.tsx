@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PlayGlyph } from "@/components/landing/PlayGlyph";
 import {
   TONE_STYLES,
+  downloadName,
   fetchMyVideos,
   formatDate,
   formatDuration,
@@ -19,12 +20,21 @@ import {
  */
 export function MyVideos() {
   const [videos, setVideos] = useState<VideoCard[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    fetchMyVideos().then((rows) => {
-      if (active) setVideos(rows);
-    });
+    fetchMyVideos()
+      .then((rows) => {
+        if (active) setVideos(rows);
+      })
+      .catch((err) => {
+        // Real request now, so a real failure path: an expired session or a
+        // backend that isn't up would otherwise hang on the skeleton forever.
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Failed to load videos");
+        setVideos([]);
+      });
     return () => {
       active = false;
     };
@@ -42,6 +52,12 @@ export function MyVideos() {
             Everything you&apos;ve generated, newest first.
           </p>
         </header>
+
+        {error && (
+          <p className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-ink/70">
+            {error}
+          </p>
+        )}
 
         {videos === null ? (
           <VideoGridSkeleton />
@@ -67,23 +83,42 @@ export function MyVideos() {
                         </span>
                       </span>
 
-                      <span className="tag absolute right-3 top-3 rounded-full bg-paper/85 px-2.5 py-1 text-ink">
-                        {formatDuration(video.duration)}
+                      <span
+                        className={`tag absolute right-3 top-3 rounded-full px-2.5 py-1 ${
+                          video.status === "failed"
+                            ? "bg-red-500/90 text-paper"
+                            : "bg-paper/85 text-ink"
+                        }`}
+                      >
+                        {video.status === "done"
+                          ? formatDuration(video.duration)
+                          : video.status}
                       </span>
                     </div>
 
                     <div className="px-3 pt-5">
                       <h2 className="font-display text-xl font-semibold leading-snug text-ink">
                         <Link
-                          href={`/editor?video=${video.id}`}
+                          href={`/editor?job=${video.id}`}
                           className="outline-none focus-visible:underline"
                         >
                           {video.title}
                         </Link>
                       </h2>
-                      <p className="mt-2 text-xs font-medium text-ink/60">
-                        {formatDate(video.createdAt)}
-                      </p>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="text-xs font-medium text-ink/60">
+                          {formatDate(video.createdAt)}
+                        </p>
+                        {video.videoUrl && (
+                          <a
+                            href={video.videoUrl}
+                            download={downloadName(video)}
+                            className="text-xs font-medium text-ink/70 underline underline-offset-2 transition-opacity hover:opacity-70"
+                          >
+                            Download
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </article>
                 </li>

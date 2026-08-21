@@ -87,3 +87,60 @@ export const COLLECTIONS: Collection[] = [
     ],
   },
 ];
+
+/**
+ * Card styling for a real (filesystem-backed) collection.
+ *
+ * `COLLECTIONS` above is the landing page's teaser art and stays hard-coded;
+ * the actual catalogue is whatever subject folders exist on disk, so its
+ * styling has to be derived from a slug rather than looked up.
+ *
+ * Known subjects get matching artwork; anything else falls back to a stable
+ * pick from the palette, so a new folder looks deliberate without needing an
+ * entry added here.
+ */
+const PALETTE: { fill: string; deep: string; border: string; Thumb: Thumb }[] = [
+  { fill: "bg-card-blue", deep: "bg-card-blue-deep", border: "border-card-blue-deep", Thumb: MathsThumb },
+  { fill: "bg-card-sage", deep: "bg-card-sage-deep", border: "border-card-sage-deep", Thumb: PhysicsThumb },
+  { fill: "bg-card-blush", deep: "bg-card-blush-deep", border: "border-card-blush-deep", Thumb: WaveThumb },
+  { fill: "bg-card-amber", deep: "bg-card-amber-deep", border: "border-card-amber-deep", Thumb: ComputerThumb },
+];
+
+const KNOWN_SUBJECTS: Record<string, number> = {
+  maths: 0,
+  math: 0,
+  physics: 1,
+  biology: 1,
+  chemistry: 2,
+  "computer-science": 3,
+};
+
+export function collectionStyle(slug: string) {
+  const known = KNOWN_SUBJECTS[slug.toLowerCase()];
+  if (known !== undefined) return PALETTE[known];
+
+  let hash = 0;
+  for (let i = 0; i < slug.length; i += 1) {
+    hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
+  }
+  return PALETTE[hash % PALETTE.length];
+}
+
+/** Per-video thumbnail, varied within a collection so cards aren't identical. */
+const VIDEO_THUMBS: Thumb[] = [
+  MathsThumb,
+  GraphsThumb,
+  OrbitThumb,
+  WaveThumb,
+  GridThumb,
+  PhysicsThumb,
+  ComputerThumb,
+];
+
+export function videoThumb(id: string): Thumb {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return VIDEO_THUMBS[hash % VIDEO_THUMBS.length];
+}

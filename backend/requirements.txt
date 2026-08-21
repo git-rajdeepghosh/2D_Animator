@@ -6,9 +6,12 @@ sqlalchemy
 psycopg2-binary
 pydantic
 pydantic-settings
-manim
+# manim is intentionally NOT installed here: the backend never renders,
+# it only launches sandbox containers. Manim and its native deps (cairo,
+# pango, LaTeX) live in sandbox/Dockerfile, which pip-installs it directly.
 docker
 python-multipart
-anthropic
+openai
 google-genai
 httpx
+pyjwt[crypto]

@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.venv
+venv
+
+.git
+.gitignore
+Dockerfile
+.dockerignore
+
+# Secrets are injected by docker-compose's `env_file:` at run time, never
+# baked into the image layers.
+.env
+.env.local

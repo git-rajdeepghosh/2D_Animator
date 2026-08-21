@@ -1,0 +1,18 @@
+# node_modules is built for the host OS (Windows); reusing it inside the
+# alpine image breaks native bindings. `npm ci` reinstalls cleanly in-image.
+node_modules
+
+# Stale host build output — `npm run build` regenerates it in-image.
+.next
+
+npm-debug.log*
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+tsconfig.tsbuildinfo
+
+# NOTE: .env.local is deliberately NOT ignored. It carries the
+# NEXT_PUBLIC_SUPABASE_* values, which Next inlines at build time; excluding it
+# would ship a bundle with an unconfigured Supabase client.

@@ -26,6 +26,9 @@ export function GeneratorView() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Narrated voiceover. On by default; turning it off skips the TTS stage,
+  // which makes the render finish sooner and cost slightly less.
+  const [voiceover, setVoiceover] = useState(true);
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
   useEffect(() => () => unsubscribeRef.current?.(), []);
@@ -45,7 +48,7 @@ export function GeneratorView() {
     setPhase("submitting");
 
     try {
-      const job = await createJob(trimmed);
+      const job = await createJob(trimmed, undefined, voiceover);
       setJobId(job.id);
       setPhase(job.status);
       setProgress(job.progress);
@@ -75,7 +78,10 @@ export function GeneratorView() {
       setPhase("failed");
       setError(err instanceof Error ? err.message : "Couldn't start the job.");
     }
-  }, [prompt, isBusy]);
+    // `voiceover` belongs here: without it, toggling the checkbox after typing
+    // the prompt would submit the value captured when the callback was last
+    // rebuilt rather than what's on screen.
+  }, [prompt, isBusy, voiceover]);
 
   const handleReset = useCallback(() => {
     unsubscribeRef.current?.();
@@ -125,9 +131,25 @@ export function GeneratorView() {
               className="w-full resize-none rounded-2xl bg-transparent px-4 py-3 text-sm text-paper outline-none placeholder:text-paper/35 disabled:opacity-50 sm:text-base"
             />
             <div className="flex items-center justify-between gap-3 border-t border-paper/10 px-4 py-3">
-              <span className="text-xs text-paper/40">
-                {prompt.trim().length}/{MAX_LENGTH}
-              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-paper/40">
+                  {prompt.trim().length}/{MAX_LENGTH}
+                </span>
+                <label
+                  className={`flex cursor-pointer select-none items-center gap-2 text-xs transition-colors ${
+                    voiceover ? "text-paper/70" : "text-paper/40"
+                  } ${isBusy ? "pointer-events-none opacity-50" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={voiceover}
+                    onChange={(e) => setVoiceover(e.target.checked)}
+                    disabled={isBusy}
+                    className="h-3.5 w-3.5 accent-highlight"
+                  />
+                  Voiceover
+                </label>
+              </div>
               <button
                 type="button"
                 onClick={handleSubmit}
@@ -167,13 +189,25 @@ export function GeneratorView() {
               {/* eslint-disable-next-line jsx-a11y/media-has-caption -- generated narration has no track yet */}
               <video src={videoSrc} controls className="w-full" />
             </div>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="tag mt-6 rounded-full bg-paper px-4 py-2 text-ink transition-opacity hover:opacity-80"
-            >
-              Generate another
-            </button>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="tag rounded-full bg-paper px-4 py-2 text-ink transition-opacity hover:opacity-80"
+              >
+                Generate another
+              </button>
+              {/* Re-rendering an edit calls no LLM, so this is the cheap way
+                  to fix a scene that came out almost right. */}
+              {jobId && (
+                <Link
+                  href={`/editor?job=${jobId}`}
+                  className="tag rounded-full border border-paper/20 px-4 py-2 text-paper/70 transition-opacity hover:opacity-80"
+                >
+                  Edit the code
+                </Link>
+              )}
+            </div>
           </div>
         )}
       </main>

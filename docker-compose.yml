@@ -1,7 +1,5 @@
 # Local dev stack. The sandbox image is built here but launched per-job by the
 # worker (via the mounted Docker socket), not run as a long-lived service.
-version: "3.9"
-
 services:
   frontend:
     build: ./frontend
@@ -17,7 +15,14 @@ services:
     env_file: [.env]
     volumes:
       - ./storage/renders:/data/renders   # serve what the worker renders
-    depends_on: [db, redis]
+      - ./storage/library:/data/library   # hand-curated public catalogue
+    # Wait for readiness, not just container start: main.py runs init_db() on
+    # startup, which fails outright if Postgres isn't accepting connections yet.
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   worker:
     build: ./backend
@@ -26,6 +31,14 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock   # launch render sandbox
       - ./storage/renders:/data/renders
+      # Per-job scene code + render output. This must be a bind mount (not a
+      # named volume): the worker asks the host daemon to mount these dirs into
+      # the sandbox container, so the host has to be able to see them too.
+      - ./storage/work:/data/work
+    environment:
+      # The host's absolute path to ./storage/work above. Compose can't derive
+      # it, so it's set in .env — see SANDBOX_WORK_HOST_DIR there.
+      - SANDBOX_WORK_HOST_DIR=${SANDBOX_WORK_HOST_DIR:?set SANDBOX_WORK_HOST_DIR in .env to the absolute host path of ./storage/work}
     depends_on: [redis, api]
 
   sandbox-image:
@@ -41,9 +54,19 @@ services:
       - POSTGRES_PASSWORD=animator
       - POSTGRES_DB=animator
     volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U animator -d animator"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
 
   redis:
     image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
 
 volumes:
   pgdata:

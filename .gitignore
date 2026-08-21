@@ -1,25 +1,60 @@
-# Node / Next.js
+# --- Secrets ---------------------------------------------------------------
+# Real credentials never get committed; .env.example is the tracked template.
+# `*.local` also covers frontend/.env.local.
+.env
+.env.*
+!.env.example
+*.local
+
+# --- Node / Next.js --------------------------------------------------------
 node_modules/
 .next/
 out/
 npm-debug.log*
+yarn-error.log*
 
-# Python
+# TypeScript incremental build cache. Regenerated on every build and a
+# guaranteed merge conflict if tracked.
+*.tsbuildinfo
+
+# --- Python ----------------------------------------------------------------
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
 .venv/
 venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Env & secrets
-.env
-.env.local
-*.local
-
-# Render output
+# --- Generated media -------------------------------------------------------
+# Rendered output is reproducible and large; keep the folders, drop the files.
 storage/renders/*
 !storage/renders/.gitkeep
+storage/work/*
+!storage/work/.gitkeep
 media/
 
-# OS
+# The curated library's *structure* is tracked (folders, .gitkeep, README) so a
+# fresh clone has somewhere to drop videos, but the videos themselves are not.
+storage/library/**/*.mp4
+storage/library/**/*.webm
+storage/library/**/*.mov
+
+# --- Agent / assistant files -----------------------------------------------
+# Instructions and config for coding assistants — useful locally, not part of
+# the project. No leading slash, so a stray copy anywhere is caught too.
+CLAUDE.md
+.claude/
+.cursor/
+.cursorrules
+.aider*
+.github/copilot-instructions.md
+
+# --- Editors & OS ----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
 .DS_Store
+Thumbs.db
+desktop.ini

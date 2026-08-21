@@ -7,25 +7,30 @@ import {
   PhysicsThumb,
   WaveThumb,
 } from "@/components/landing/Thumbnails";
+import { API_URL, listJobs, type Job, type JobStatus } from "@/lib/api";
 
 /**
- * Mock "my videos" data.
+ * The signed-in account's own generated videos, shaped for the card grid.
  *
- * The backend has `GET /jobs/{id}` but no per-user listing endpoint yet, and
- * there is no auth on the API at all, so there is nothing real to call. This
- * stands in with the same shape a real payload would have; swap `fetchMyVideos`
- * for the API call when the endpoint lands.
+ * Cards keep the hand-drawn thumbnails rather than a frame pulled from the
+ * video: art is picked deterministically from the job id, so a given video
+ * always looks the same without any per-render extraction work.
  */
+
+export type Thumb = (props: { className?: string }) => JSX.Element;
 
 export type VideoCard = {
   id: string;
   title: string;
   /** ISO date, formatted at render time. */
   createdAt: string;
-  /** Seconds. */
-  duration: number;
+  /** Seconds; null while a render is still in flight or has failed. */
+  duration: number | null;
   tone: "blue" | "sage" | "blush" | "amber";
-  Thumb: (props: { className?: string }) => JSX.Element;
+  Thumb: Thumb;
+  status: JobStatus;
+  /** Absolute URL of the finished video, or null if there isn't one yet. */
+  videoUrl: string | null;
 };
 
 export const TONE_STYLES: Record<
@@ -54,73 +59,75 @@ export const TONE_STYLES: Record<
   },
 };
 
-const MOCK: VideoCard[] = [
-  {
-    id: "v1",
-    title: "Why π shows up in a circle's area",
-    createdAt: "2026-08-05T14:02:00Z",
-    duration: 48,
-    tone: "blue",
-    Thumb: MathsThumb,
-  },
-  {
-    id: "v2",
-    title: "Momentum, before and after impact",
-    createdAt: "2026-08-04T09:41:00Z",
-    duration: 44,
-    tone: "sage",
-    Thumb: PhysicsThumb,
-  },
-  {
-    id: "v3",
-    title: "A binary search, one step at a time",
-    createdAt: "2026-08-02T18:15:00Z",
-    duration: 50,
-    tone: "blush",
-    Thumb: GridThumb,
-  },
-  {
-    id: "v4",
-    title: "Reading a distribution properly",
-    createdAt: "2026-07-29T11:07:00Z",
-    duration: 43,
-    tone: "amber",
-    Thumb: GraphsThumb,
-  },
-  {
-    id: "v5",
-    title: "Orbital resonance, slowed right down",
-    createdAt: "2026-07-27T16:30:00Z",
-    duration: 58,
-    tone: "blue",
-    Thumb: OrbitThumb,
-  },
-  {
-    id: "v6",
-    title: "How a hash table avoids collisions",
-    createdAt: "2026-07-24T08:52:00Z",
-    duration: 57,
-    tone: "blush",
-    Thumb: ComputerThumb,
-  },
-  {
-    id: "v7",
-    title: "How a voiceover gets timed to a scene",
-    createdAt: "2026-07-21T13:19:00Z",
-    duration: 49,
-    tone: "sage",
-    Thumb: WaveThumb,
-  },
+const THUMBS: Thumb[] = [
+  MathsThumb,
+  PhysicsThumb,
+  GraphsThumb,
+  OrbitThumb,
+  WaveThumb,
+  GridThumb,
+  ComputerThumb,
 ];
 
-/** Stand-in for the listing endpoint, latency included so the skeleton shows. */
-export function fetchMyVideos(): Promise<VideoCard[]> {
-  return new Promise((resolve) => setTimeout(() => resolve(MOCK), 700));
+const TONES = Object.keys(TONE_STYLES) as VideoCard["tone"][];
+
+/**
+ * Stable index derived from a job id.
+ *
+ * Deterministic on purpose: a random pick would reshuffle every card on each
+ * render, so the same video would change colour as you navigate.
+ */
+function hashIndex(id: string, length: number): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return hash % length;
 }
 
-export function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+function toCard(job: Job): VideoCard {
+  return {
+    id: job.id,
+    // A job only carries a title if one was supplied at creation; the prompt
+    // itself isn't on the listing payload, so fall back to something neutral
+    // rather than showing a bare id.
+    title: job.title?.trim() || "Untitled video",
+    createdAt: job.created_at,
+    duration: job.duration_seconds,
+    tone: TONES[hashIndex(job.id, TONES.length)],
+    Thumb: THUMBS[hashIndex(job.id, THUMBS.length)],
+    status: job.status,
+    videoUrl: job.video_url ? `${API_URL}${job.video_url}` : null,
+  };
+}
+
+/**
+ * The account's videos, newest first.
+ *
+ * Failed and in-flight jobs are included rather than hidden: a failed render
+ * still has editable scene code behind it, so the card is the way back into
+ * the editor to fix it. Silently dropping them would just look like the video
+ * vanished.
+ */
+export async function fetchMyVideos(): Promise<VideoCard[]> {
+  const jobs = await listJobs();
+  return jobs.map(toCard);
+}
+
+/** A filename-safe version of the title, for downloads. */
+export function downloadName(video: VideoCard): string {
+  const slug = video.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `${slug || "video"}.mp4`;
+}
+
+export function formatDuration(seconds: number | null): string {
+  if (seconds === null || Number.isNaN(seconds)) return "—";
+  const total = Math.round(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
