@@ -33,6 +33,8 @@ storage/renders/*
 !storage/renders/.gitkeep
 storage/work/*
 !storage/work/.gitkeep
+storage/tts-cache/*
+!storage/tts-cache/.gitkeep
 media/
 
 # The curated library's *structure* is tracked (folders, .gitkeep, README) so a

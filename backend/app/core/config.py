@@ -55,6 +55,14 @@ class Settings(BaseSettings):
     # alias routes to a different model in the family (Sol).
     llm_api_key: str = "changeme"
     llm_model: str = "gpt-5.6-luna"
+
+    # Retry ceiling for the OpenAI SDK, which already retries 408/409/429/5xx
+    # with exponential backoff — this raises its limit rather than
+    # reimplementing backoff on top of it. Higher than the SDK default of 2
+    # because a transient upstream blip otherwise kills a job seconds before
+    # it would have spent a minute rendering.
+    llm_max_retries: int = 5
+
     # Narration script (Gemini).
     gemini_api_key: str = "changeme"
     gemini_model: str = "gemini-3.7-flash"
@@ -77,6 +85,11 @@ class Settings(BaseSettings):
     tts_model: str = "gpt-4o-mini-tts"
     tts_voice: str = "alloy"
 
+    # Synthesized audio is cached here, keyed by the narration text and the
+    # voice settings. Re-rendering edited scene code reuses the same narration,
+    # so without this every iteration in the editor pays for identical speech.
+    tts_cache_dir: str = "/data/tts-cache"
+
     # gpt-4o-mini-tts accepts free-text delivery direction alongside the script,
     # so house tone is configuration rather than something baked into a voice
     # choice. Applies to every video.
@@ -89,6 +102,13 @@ class Settings(BaseSettings):
     def tts_key(self) -> str:
         """Key for the speech endpoint, falling back to the main OpenAI key."""
         return self.tts_api_key or self.llm_api_key
+
+    # --- Signed render URLs ---
+    # HMAC key for the short-lived signatures on /renders. A <video> tag cannot
+    # send an Authorization header, so private output is protected by signing
+    # the URL instead. Generate one with:
+    #   python -c "import secrets; print(secrets.token_urlsafe(32))"
+    render_url_secret: str = ""
 
     # --- Render sandbox ---
     sandbox_image: str = "2danimator-sandbox:latest"

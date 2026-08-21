@@ -9,11 +9,17 @@
 # costs about a cent and a half — a fraction of what the render itself costs in
 # machine time. ElevenLabs sounds better but is several times the price and
 # needs its own account.
+import hashlib
+import logging
+import os
+import shutil
 from pathlib import Path
 
 import openai
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class TTSNotConfigured(RuntimeError):
@@ -39,6 +45,14 @@ def synthesize(text: str, out_dir: str) -> str:
     out = Path(out_dir) / "voiceover.mp3"
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    cached = Path(settings.tts_cache_dir) / f"{_cache_key(text)}.mp3"
+    if cached.is_file():
+        # Re-rendering edited scene code reuses the narration verbatim, so this
+        # is the common path once someone starts iterating in the editor.
+        logger.info("TTS cache hit for %s", cached.name)
+        shutil.copyfile(cached, out)
+        return str(out)
+
     client = openai.OpenAI(api_key=key)
     response = client.audio.speech.create(
         model=settings.tts_model,
@@ -51,6 +65,45 @@ def synthesize(text: str, out_dir: str) -> str:
     )
     # Whole file at once: a minute of speech is a small download, and the
     # caller needs a complete file on disk before ffmpeg can mux it anyway.
-    out.write_bytes(response.read())
+    audio = response.read()
+    out.write_bytes(audio)
+    _store_in_cache(cached, audio)
 
     return str(out)
+
+
+def _cache_key(text: str) -> str:
+    """Digest of everything that changes the audio.
+
+    The voice and delivery instructions are part of the key, not just the
+    script: changing either should produce new audio rather than silently
+    replaying the old take.
+    """
+    digest = hashlib.sha256()
+    for part in (
+        text,
+        settings.tts_model,
+        settings.tts_voice,
+        settings.tts_instructions,
+    ):
+        # Length-prefixed so that moving a boundary between fields can't
+        # collide with a different set of values.
+        digest.update(f"{len(part)}:{part}".encode("utf-8"))
+    return digest.hexdigest()
+
+
+def _store_in_cache(path: Path, audio: bytes) -> None:
+    """Write audio into the cache, or skip if that isn't possible.
+
+    Written to a temporary file and then renamed, because rename is atomic:
+    concurrent workers rendering the same narration would otherwise be able to
+    read a half-written file. A cache failure is never fatal — the audio has
+    already been delivered to the caller.
+    """
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        tmp.write_bytes(audio)
+        tmp.replace(path)
+    except OSError as exc:
+        logger.warning("Could not cache TTS audio at %s: %s", path, exc)

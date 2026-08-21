@@ -24,6 +24,11 @@ logger = logging.getLogger(__name__)
 # Kept in sync with the class the sandbox looks for when rendering.
 SCENE_CLASS_NAME = "GeneratedScene"
 
+# How many times to re-ask when the model returns an empty completion.
+# Not a config knob: this is a property of how reasoning budgets behave,
+# not something an operator should be tuning per deployment.
+_EMPTY_COMPLETION_ATTEMPTS = 2
+
 
 class CodegenError(RuntimeError):
     """Raised when a provider returns nothing usable for a pipeline stage."""
@@ -102,7 +107,10 @@ class Codegen:
     """Wraps both provider clients with the two pipeline prompts."""
 
     def __post_init__(self) -> None:
-        self._openai = openai.OpenAI(api_key=settings.llm_api_key)
+        self._openai = openai.OpenAI(
+            api_key=settings.llm_api_key,
+            max_retries=settings.llm_max_retries,
+        )
         self._gemini = genai.Client(api_key=settings.gemini_api_key)
 
     def narration_script(self, prompt: str) -> str:
@@ -193,9 +201,43 @@ class Codegen:
 
         Note `max_completion_tokens` budgets reasoning tokens *and* visible
         output together. If reasoning exhausts it the request still succeeds,
-        just with empty content and finish_reason="length" — so the empty case
-        is checked explicitly rather than handed downstream as "scene code".
+        just with empty content and finish_reason="length".
+
+        That case is retried here rather than left to the SDK: an empty
+        completion arrives as a perfectly good HTTP 200, so the client's own
+        retry (which covers 429s and 5xxs) never fires for it. The budget is
+        usually only marginally exceeded, so asking again generally works.
+        Transport-level failures are left to the SDK, which already backs off
+        exponentially — see Settings.llm_max_retries.
         """
+        finish_reason: str | None = None
+
+        for attempt in range(1, _EMPTY_COMPLETION_ATTEMPTS + 1):
+            code, finish_reason = self._scene_code_once(narration)
+            if code:
+                return code
+            logger.warning(
+                "%s returned no scene code (finish_reason=%r), attempt %d of %d.",
+                settings.llm_model,
+                finish_reason,
+                attempt,
+                _EMPTY_COMPLETION_ATTEMPTS,
+            )
+
+        hint = (
+            " The reasoning budget consumed max_completion_tokens before any "
+            "code was emitted; raise it or lower reasoning_effort."
+            if finish_reason == "length"
+            else ""
+        )
+        raise CodegenError(
+            f"{settings.llm_model} returned no scene code after "
+            f"{_EMPTY_COMPLETION_ATTEMPTS} attempts "
+            f"(finish_reason={finish_reason!r}).{hint}"
+        )
+
+    def _scene_code_once(self, narration: str) -> tuple[str, str | None]:
+        """One codegen request. Returns (code, finish_reason); code may be ""."""
         stream = self._openai.chat.completions.create(
             model=settings.llm_model,
             max_completion_tokens=16000,
@@ -218,19 +260,7 @@ class Codegen:
             if choice.finish_reason:
                 finish_reason = choice.finish_reason
 
-        code = _strip_code_fences("".join(parts)).strip()
-        if not code:
-            hint = (
-                " The reasoning budget consumed max_completion_tokens before any "
-                "code was emitted; raise it or lower reasoning_effort."
-                if finish_reason == "length"
-                else ""
-            )
-            raise CodegenError(
-                f"{settings.llm_model} returned no scene code "
-                f"(finish_reason={finish_reason!r}).{hint}"
-            )
-        return code
+        return _strip_code_fences("".join(parts)).strip(), finish_reason
 
 
 def _strip_code_fences(text: str) -> str:

@@ -1,5 +1,6 @@
 # SQLAlchemy engine + session factory shared by the API and the worker.
 from collections.abc import Iterator
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
@@ -23,8 +24,23 @@ def get_db() -> Iterator[Session]:
 
 
 def init_db() -> None:
-    """Create tables from the ORM metadata (dev convenience; use migrations in prod)."""
-    # Import models so they register on Base.metadata before create_all.
-    from app import models  # noqa: F401
+    """Bring the database schema up to date by running Alembic migrations.
 
-    Base.metadata.create_all(bind=engine)
+    This used to call `Base.metadata.create_all()`, which only ever creates
+    *missing tables* — it silently ignores new columns on tables that already
+    exist. A model change therefore looked fine on a fresh database and then
+    failed at runtime against any database created before it, which is exactly
+    how the `jobs.voiceover` column came to need a hand-written ALTER TABLE.
+
+    Running `upgrade head` on startup is safe to repeat: applied revisions are
+    recorded in `alembic_version` and skipped.
+    """
+    from alembic import command
+    from alembic.config import Config
+
+    backend_root = Path(__file__).resolve().parents[2]
+    cfg = Config(str(backend_root / "alembic.ini"))
+    # script_location in the ini is relative, and would otherwise resolve
+    # against the caller's working directory rather than the backend package.
+    cfg.set_main_option("script_location", str(backend_root / "alembic"))
+    command.upgrade(cfg, "head")

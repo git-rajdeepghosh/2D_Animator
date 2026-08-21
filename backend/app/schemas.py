@@ -1,8 +1,9 @@
 # Request/response models for the API (distinct from the ORM models).
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from app.core import signing
 from app.models.job import JobStatus
 
 
@@ -34,6 +35,21 @@ class JobRead(BaseModel):
     duration_seconds: float | None = None
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer("video_url")
+    def _sign_video_url(self, value: str | None) -> str | None:
+        """Attach a signed, expiring token to the render URL.
+
+        Done at serialization rather than in each route so every response
+        carrying a job — create, get, list, revisions, detail — returns a URL
+        that actually plays, and the frontend needs no knowledge of signing.
+
+        Left untouched when no secret is configured, which keeps the open local
+        mode working; startup warns loudly in that case.
+        """
+        if not value or not signing.is_configured():
+            return value
+        return signing.sign_path(value)
 
 
 class JobDetail(JobRead):

@@ -35,6 +35,8 @@ services:
       # named volume): the worker asks the host daemon to mount these dirs into
       # the sandbox container, so the host has to be able to see them too.
       - ./storage/work:/data/work
+      # Synthesized narration, reused across re-renders of the same script.
+      - ./storage/tts-cache:/data/tts-cache
     environment:
       # The host's absolute path to ./storage/work above. Compose can't derive
       # it, so it's set in .env — see SANDBOX_WORK_HOST_DIR there.

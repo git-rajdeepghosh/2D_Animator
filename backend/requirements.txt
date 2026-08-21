@@ -3,6 +3,7 @@ uvicorn[standard]
 celery[redis]
 redis
 sqlalchemy
+alembic
 psycopg2-binary
 pydantic
 pydantic-settings
@@ -15,3 +16,4 @@ openai
 google-genai
 httpx
 pyjwt[crypto]
+pytest
