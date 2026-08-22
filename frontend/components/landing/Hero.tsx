@@ -232,7 +232,7 @@ export function Hero() {
           <span className="italic">Type a topic, get an animation.</span>
         </h1>
 
-        <p className="mt-8 max-w-xl text-base font-medium leading-relaxed text-paper/80 sm:text-lg">
+        <p className="mt-8 max-w-xl text-base font-medium leading-relaxed text-paper sm:text-lg">
           Describe a concept in plain language. We write the script, animate it
           and lay the voiceover over the top — no timeline to learn.
         </p>

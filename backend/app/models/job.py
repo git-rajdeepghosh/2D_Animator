@@ -79,6 +79,10 @@ class Job(Base):
     narration_script: Mapped[str | None] = mapped_column(Text, nullable=True)
     scene_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # First frame of the render, used as the card thumbnail. Stored rather
+    # than derived from the job id so a job whose render failed simply has
+    # none, instead of the UI requesting an image that was never made.
+    poster_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Length of the finished video, measured with ffprobe once it is muxed.
     # Stored rather than probed on demand so listing pages don't shell out to
     # ffprobe once per card.

@@ -31,6 +31,8 @@ export type VideoCard = {
   status: JobStatus;
   /** Absolute URL of the finished video, or null if there isn't one yet. */
   videoUrl: string | null;
+  /** Absolute URL of the poster frame, or null to fall back to `Thumb`. */
+  posterUrl: string | null;
 };
 
 export const TONE_STYLES: Record<
@@ -98,6 +100,7 @@ function toCard(job: Job): VideoCard {
     Thumb: THUMBS[hashIndex(job.id, THUMBS.length)],
     status: job.status,
     videoUrl: job.video_url ? `${API_URL}${job.video_url}` : null,
+    posterUrl: job.poster_url ? `${API_URL}${job.poster_url}` : null,
   };
 }
 

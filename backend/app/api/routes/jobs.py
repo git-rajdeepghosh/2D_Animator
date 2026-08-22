@@ -9,14 +9,15 @@
 import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.auth import get_current_user_id, get_ws_user_id
 from app.core.database import SessionLocal, get_db
 from app.core.progress import subscribe_progress
 from app.models.job import Job, JobStatus, Project
-from app.schemas import JobCreate, JobDetail, JobRead, RerenderCreate
+from app.schemas import JobCreate, JobDetail, JobRead, JobUpdate, RerenderCreate
+from app.services import storage
 from app.services.scene_validation import SceneCodeInvalid, validate_scene_code
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -85,6 +86,55 @@ def get_job(
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
+
+@router.patch("/{job_id}", response_model=JobRead)
+def update_job(
+    job_id: str,
+    body: JobUpdate,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> Job:
+    """Rename a video.
+
+    The title lives on the Project, so this renames every revision of it —
+    revisions are alternate takes of one video, not separate videos.
+    """
+    job = _owned_job(db, job_id, user_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    job.project.title = body.title.strip()
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+@router.delete("/{job_id}", status_code=204)
+def delete_job(
+    job_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> None:
+    """Delete a render and the files it produced."""
+    job = _owned_job(db, job_id, user_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    project = job.project
+    storage.delete(job.id)
+    db.delete(job)
+    db.flush()
+
+    # Drop the project once its last take is gone, so deleting every revision
+    # doesn't leave an invisible orphan row behind.
+    remaining = db.scalar(
+        select(func.count()).select_from(Job).where(Job.project_id == project.id)
+    )
+    if not remaining:
+        db.delete(project)
+
+    db.commit()
 
 
 @router.get("/{job_id}/detail", response_model=JobDetail)

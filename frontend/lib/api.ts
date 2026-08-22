@@ -44,6 +44,8 @@ export interface Job {
   status: JobStatus;
   progress: number;
   video_url: string | null;
+  /** First frame of the render, for card thumbnails. */
+  poster_url: string | null;
   error: string | null;
   /** Whether this render synthesizes a narrated voiceover. */
   voiceover: boolean;
@@ -173,6 +175,32 @@ export async function getJobDetail(jobId: string): Promise<JobDetail> {
   });
   if (!res.ok) return raiseFor(res, "Failed to load job");
   return res.json();
+}
+
+/**
+ * Rename a video.
+ *
+ * The title lives on the project, so this renames every revision of it —
+ * revisions are alternate takes of one video, not separate videos.
+ */
+export async function renameJob(jobId: string, title: string): Promise<Job> {
+  const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) return raiseFor(res, "Failed to rename");
+  return res.json();
+}
+
+/** Delete a render and the files it produced. Not reversible. */
+export async function deleteJob(jobId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+    method: "DELETE",
+    headers: await authHeaders(),
+  });
+  // 204 No Content on success, so there is no body to parse.
+  if (!res.ok) await raiseFor(res, "Failed to delete");
 }
 
 /** Every render of this job's project, newest first. */

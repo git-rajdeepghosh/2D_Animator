@@ -27,8 +27,8 @@ export default function EditorPage({
     return (
       <main className="flex min-h-screen items-center justify-center bg-ink px-6">
         <div className="text-center">
-          <p className="tag mb-3 text-paper/50">Editor</p>
-          <p className="text-sm text-paper/60">
+          <p className="tag mb-3 text-paper-400">Editor</p>
+          <p className="text-sm text-paper-400">
             Open a video from your library to edit its scene.
           </p>
           <Link

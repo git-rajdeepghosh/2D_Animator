@@ -189,13 +189,13 @@ export function Showcase() {
         {/* Heading, above the grid on small screens and dead centre of the
             ring on large ones. */}
         <div className="mx-auto mb-16 max-w-2xl text-center lg:hidden">
-          <p className="tag mb-5 text-paper/40">Showcase</p>
+          <p className="tag mb-5 text-paper-600">Showcase</p>
           <h2 className="font-display text-[clamp(2.1rem,5vw,3.6rem)] font-bold leading-[1.05] text-paper">
             A few things people have made
           </h2>
-          <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-paper/55 sm:text-base">
-            Placeholder subheading. Every one of these started as a single
-            sentence typed into the bar above.
+          <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-paper-400 sm:text-base">
+            Every one of these started as a single sentence typed into the bar
+            above — no storyboard, no timeline, no editing software.
           </p>
         </div>
 
@@ -208,13 +208,13 @@ export function Showcase() {
           <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 hidden -translate-y-1/2 px-4 text-center lg:block">
             {/* inline-block so the label's box hugs its text — as a full-width
                 block it reaches across the whole ring. */}
-            <p className="tag mb-5 inline-block text-paper/40">Showcase</p>
+            <p className="tag mb-5 inline-block text-paper-600">Showcase</p>
             <h2 className="mx-auto max-w-xl font-display text-[clamp(2.1rem,5vw,3.6rem)] font-bold leading-[1.05] text-paper">
               A few things people have made
             </h2>
-            <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-paper/55 sm:text-base">
-              Placeholder subheading. Every one of these started as a single
-              sentence typed into the bar above.
+            <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-paper-400 sm:text-base">
+              Every one of these started as a single sentence typed into the
+              bar above — no storyboard, no timeline, no editing software.
             </p>
           </div>
 
@@ -242,7 +242,7 @@ export function Showcase() {
                 <div
                   className={`relative h-full w-full overflow-hidden rounded-xl ${work.inner}`}
                 >
-                  <work.Thumb className="absolute inset-0 h-full w-full text-ink/55" />
+                  <work.Thumb className="absolute inset-0 h-full w-full text-ink-400" />
                 </div>
 
                 <span className="tag absolute right-3 top-3 z-10 rounded-full bg-ink px-2 py-0.5 text-[9px] text-paper">
@@ -250,7 +250,7 @@ export function Showcase() {
                 </span>
               </div>
 
-              <figcaption className="mt-3 text-xs font-medium leading-relaxed text-paper/70">
+              <figcaption className="mt-3 text-xs font-medium leading-relaxed text-paper">
                 {work.caption}
               </figcaption>
             </figure>

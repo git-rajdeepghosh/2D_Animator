@@ -22,6 +22,15 @@
     @apply font-semibold;
   }
 
+  /* Cormorant Garamond ships old-style (text) figures by default: digits sit
+     at x-height, some with descenders. That is why the "2" in "2DAnimator"
+     reads as a size smaller than the capitals beside it — it genuinely is
+     shorter. Lining figures align digits to cap height, which is what a
+     wordmark needs, and what any heading containing a number wants too. */
+  .font-display {
+    font-variant-numeric: lining-nums;
+  }
+
   /* Selection stays on-brand with the single highlight colour. */
   ::selection {
     @apply bg-highlight text-ink;

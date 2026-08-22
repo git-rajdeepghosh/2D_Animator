@@ -53,7 +53,7 @@ export function SiteNav({
               href={link.href}
               className={`nav-link px-2.5 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm ${
                 link.compact ? "" : "hidden sm:block"
-              } ${dark ? "" : "text-paper/70 hover:bg-paper hover:text-ink"}`}
+              } ${dark ? "" : "text-paper hover:bg-paper hover:text-ink"}`}
             >
               {link.label}
             </Link>

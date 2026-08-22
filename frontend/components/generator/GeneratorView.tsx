@@ -111,11 +111,11 @@ export function GeneratorView() {
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-20">
-        <p className="tag mb-4 text-paper/50">Generator</p>
+        <p className="tag mb-4 text-paper-400">Generator</p>
         <h1 className="font-display text-3xl leading-tight text-paper sm:text-4xl">
           Describe it. We&apos;ll animate it.
         </h1>
-        <p className="mt-4 text-sm leading-relaxed text-paper/55 sm:text-base">
+        <p className="mt-4 text-sm leading-relaxed text-paper-400 sm:text-base">
           Plain language in, a short narrated explainer out &mdash; script and
           animation generated from your prompt.
         </p>
@@ -128,16 +128,16 @@ export function GeneratorView() {
               placeholder="Explain how binary search works…"
               rows={3}
               disabled={isBusy}
-              className="w-full resize-none rounded-2xl bg-transparent px-4 py-3 text-sm text-paper outline-none placeholder:text-paper/35 disabled:opacity-50 sm:text-base"
+              className="w-full resize-none rounded-2xl bg-transparent px-4 py-3 text-sm text-paper outline-none placeholder:text-paper-600 disabled:opacity-50 sm:text-base"
             />
             <div className="flex items-center justify-between gap-3 border-t border-paper/10 px-4 py-3">
               <div className="flex items-center gap-4">
-                <span className="text-xs text-paper/40">
+                <span className="text-xs text-paper-600">
                   {prompt.trim().length}/{MAX_LENGTH}
                 </span>
                 <label
                   className={`flex cursor-pointer select-none items-center gap-2 text-xs transition-colors ${
-                    voiceover ? "text-paper/70" : "text-paper/40"
+                    voiceover ? "text-paper" : "text-paper-600"
                   } ${isBusy ? "pointer-events-none opacity-50" : ""}`}
                 >
                   <input
@@ -164,7 +164,7 @@ export function GeneratorView() {
         )}
 
         {phase === "submitting" && (
-          <p className="mt-8 text-xs text-paper/40">Starting…</p>
+          <p className="mt-8 text-xs text-paper-600">Starting…</p>
         )}
 
         {phase !== "idle" && phase !== "submitting" && !isDone && !isFailed && (
@@ -173,18 +173,18 @@ export function GeneratorView() {
 
         {isFailed && (
           <div className="mt-6 rounded-2xl border border-accent-red/30 bg-accent-red/10 px-5 py-4">
-            <p className="text-sm text-paper/90">
+            <p className="text-sm text-paper">
               {error ?? "Something went wrong."}
             </p>
             {jobId && (
-              <p className="mt-1 font-mono text-xs text-paper/40">job {jobId}</p>
+              <p className="mt-1 font-mono text-xs text-paper-600">job {jobId}</p>
             )}
           </div>
         )}
 
         {isDone && videoSrc && (
           <div className="mt-10">
-            <p className="tag mb-3 text-paper/40">Ready</p>
+            <p className="tag mb-3 text-paper-600">Ready</p>
             <div className="overflow-hidden rounded-3xl border border-paper/10 bg-paper/5">
               {/* eslint-disable-next-line jsx-a11y/media-has-caption -- generated narration has no track yet */}
               <video src={videoSrc} controls className="w-full" />
@@ -202,7 +202,7 @@ export function GeneratorView() {
               {jobId && (
                 <Link
                   href={`/editor?job=${jobId}`}
-                  className="tag rounded-full border border-paper/20 px-4 py-2 text-paper/70 transition-opacity hover:opacity-80"
+                  className="tag rounded-full border border-paper/20 px-4 py-2 text-paper transition-opacity hover:opacity-80"
                 >
                   Edit the code
                 </Link>

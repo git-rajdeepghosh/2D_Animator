@@ -97,7 +97,7 @@ function SubjectCard({
       <div
         className={`relative aspect-[16/9] overflow-hidden rounded-[20px] ${collection.deep}`}
       >
-        <collection.Thumb className="absolute inset-0 h-full w-full text-ink/55" />
+        <collection.Thumb className="absolute inset-0 h-full w-full text-ink-400" />
       </div>
 
       <div className="flex items-end justify-between gap-6 px-4 pt-7">
@@ -105,11 +105,11 @@ function SubjectCard({
           <h3 className="font-display text-[clamp(1.9rem,3vw,2.6rem)] font-bold leading-tight text-ink">
             {collection.name}
           </h3>
-          <p className="mt-2 text-sm font-medium leading-relaxed text-ink/70 sm:text-base">
+          <p className="mt-2 text-sm font-medium leading-relaxed text-ink-600 sm:text-base">
             Short animated explainers for {collection.topic} concepts.
           </p>
         </div>
-        <span className="tag shrink-0 whitespace-nowrap pb-1.5 text-ink/50">
+        <span className="tag shrink-0 whitespace-nowrap pb-1.5 text-ink-400">
           {collection.videos.length} videos
         </span>
       </div>
@@ -176,8 +176,9 @@ export function LibraryPreview() {
             </h2>
           </div>
           <p className="max-w-xs text-sm font-medium leading-relaxed text-ink-400">
-            Placeholder description line. Every collection is a starting point,
-            not a template — the script still comes from your prompt.
+            Browse by subject to see what the animations look like. Every
+            collection is a starting point, not a template — the script still
+            comes from your prompt.
           </p>
         </div>
 

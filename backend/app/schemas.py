@@ -27,6 +27,9 @@ class JobRead(BaseModel):
     status: JobStatus
     progress: int
     video_url: str | None = None
+    # First frame of the render, for card thumbnails. Signed like
+    # video_url, since it lives under the same private /renders route.
+    poster_url: str | None = None
     error: str | None = None
     voiceover: bool = True
     # Denormalised from the parent Project so listing pages can render a card
@@ -36,7 +39,7 @@ class JobRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @field_serializer("video_url")
+    @field_serializer("video_url", "poster_url")
     def _sign_video_url(self, value: str | None) -> str | None:
         """Attach a signed, expiring token to the render URL.
 
@@ -93,3 +96,14 @@ class LibraryCollection(BaseModel):
     slug: str
     name: str
     videos: list[LibraryVideo]
+
+
+class JobUpdate(BaseModel):
+    """Body for PATCH /jobs/{id} — currently just the title.
+
+    The title lives on the Project, so renaming one job renames every revision
+    of it. That is intended: revisions are takes of the same video, not
+    separate videos.
+    """
+
+    title: str = Field(min_length=1, max_length=200)

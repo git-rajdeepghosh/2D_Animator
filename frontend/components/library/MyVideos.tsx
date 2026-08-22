@@ -3,14 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PlayGlyph } from "@/components/landing/PlayGlyph";
-import {
-  TONE_STYLES,
-  downloadName,
-  fetchMyVideos,
-  formatDate,
-  formatDuration,
-  type VideoCard,
-} from "./videos";
+import { VideoCardItem } from "./VideoCardItem";
+import { fetchMyVideos, type VideoCard } from "./videos";
 
 /**
  * `/library` — the videos this account has generated.
@@ -40,6 +34,18 @@ export function MyVideos() {
     };
   }, []);
 
+  // Update in place rather than refetching: the list is already correct and a
+  // round-trip would make renaming and deleting feel slower than they are.
+  function handleRenamed(id: string, title: string) {
+    setVideos((rows) =>
+      rows?.map((v) => (v.id === id ? { ...v, title } : v)) ?? rows,
+    );
+  }
+
+  function handleDeleted(id: string) {
+    setVideos((rows) => rows?.filter((v) => v.id !== id) ?? rows);
+  }
+
   return (
     <div className="bg-paper pb-28 pt-32 sm:pt-40">
       <div className="mx-auto max-w-6xl px-6">
@@ -54,7 +60,7 @@ export function MyVideos() {
         </header>
 
         {error && (
-          <p className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-ink/70">
+          <p className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-ink-600">
             {error}
           </p>
         )}
@@ -65,65 +71,15 @@ export function MyVideos() {
           <EmptyState />
         ) : (
           <ul className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {videos.map((video) => {
-              const tone = TONE_STYLES[video.tone];
-              return (
-                <li key={video.id}>
-                  <article
-                    className={`group h-full overflow-hidden rounded-3xl border p-3 pb-6 ${tone.fill} ${tone.border}`}
-                  >
-                    <div
-                      className={`relative aspect-[4/3] overflow-hidden rounded-2xl ${tone.deep}`}
-                    >
-                      <video.Thumb className="absolute inset-0 h-full w-full text-ink/55" />
-
-                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-highlight text-ink">
-                          <PlayGlyph className="h-5 w-5 translate-x-[1px]" />
-                        </span>
-                      </span>
-
-                      <span
-                        className={`tag absolute right-3 top-3 rounded-full px-2.5 py-1 ${
-                          video.status === "failed"
-                            ? "bg-red-500/90 text-paper"
-                            : "bg-paper/85 text-ink"
-                        }`}
-                      >
-                        {video.status === "done"
-                          ? formatDuration(video.duration)
-                          : video.status}
-                      </span>
-                    </div>
-
-                    <div className="px-3 pt-5">
-                      <h2 className="font-display text-xl font-semibold leading-snug text-ink">
-                        <Link
-                          href={`/editor?job=${video.id}`}
-                          className="outline-none focus-visible:underline"
-                        >
-                          {video.title}
-                        </Link>
-                      </h2>
-                      <div className="mt-2 flex items-center justify-between gap-3">
-                        <p className="text-xs font-medium text-ink/60">
-                          {formatDate(video.createdAt)}
-                        </p>
-                        {video.videoUrl && (
-                          <a
-                            href={video.videoUrl}
-                            download={downloadName(video)}
-                            className="text-xs font-medium text-ink/70 underline underline-offset-2 transition-opacity hover:opacity-70"
-                          >
-                            Download
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                </li>
-              );
-            })}
+            {videos.map((video) => (
+              <li key={video.id}>
+                <VideoCardItem
+                  video={video}
+                  onRenamed={handleRenamed}
+                  onDeleted={handleDeleted}
+                />
+              </li>
+            ))}
           </ul>
         )}
       </div>

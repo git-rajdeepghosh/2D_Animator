@@ -76,7 +76,7 @@ export function LibraryBrowser() {
         </header>
 
         {error && (
-          <p className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-ink/70">
+          <p className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-ink-600">
             {error}
           </p>
         )}
@@ -97,7 +97,7 @@ export function LibraryBrowser() {
                 <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-tight text-ink">
                   {collection.name}
                 </h2>
-                <span className="tag pb-2 text-ink/45">
+                <span className="tag pb-2 text-ink-400">
                   {collection.videos.length} video
                   {collection.videos.length === 1 ? "" : "s"}
                 </span>
@@ -116,7 +116,7 @@ export function LibraryBrowser() {
                           <div
                             className={`relative aspect-[4/3] overflow-hidden rounded-2xl ${style.deep}`}
                           >
-                            <Thumb className="absolute inset-0 h-full w-full text-ink/55" />
+                            <Thumb className="absolute inset-0 h-full w-full text-ink-400" />
 
                             <span className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
                               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-highlight text-ink">
@@ -160,11 +160,11 @@ function EmptyLibrary() {
         The catalogue is empty.
       </p>
       <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-ink-400">
-        Drop an <code className="font-mono text-ink/70">.mp4</code> into a
+        Drop an <code className="font-mono text-ink-600">.mp4</code> into a
         subject folder under{" "}
-        <code className="font-mono text-ink/70">storage/library/</code> — for
+        <code className="font-mono text-ink-600">storage/library/</code> — for
         example{" "}
-        <code className="font-mono text-ink/70">
+        <code className="font-mono text-ink-600">
           physics/why-orbits-are-ellipses.mp4
         </code>{" "}
         — and it appears here. The filename becomes the title.

@@ -135,7 +135,7 @@ export function EditorView({ jobId }: { jobId: string }) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-ink px-6">
         <div className="text-center">
-          <p className="text-sm text-paper/60">{loadError}</p>
+          <p className="text-sm text-paper-400">{loadError}</p>
           <Link
             href="/my-videos"
             className="tag mt-6 inline-block rounded-full bg-paper px-4 py-2 text-ink"
@@ -150,7 +150,7 @@ export function EditorView({ jobId }: { jobId: string }) {
   if (!detail) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-ink">
-        <p className="text-sm text-paper/40">Loading…</p>
+        <p className="text-sm text-paper-600">Loading…</p>
       </main>
     );
   }
@@ -161,11 +161,11 @@ export function EditorView({ jobId }: { jobId: string }) {
     <main className="min-h-screen bg-ink pb-20">
       <header className="flex items-center justify-between gap-4 px-6 py-6">
         <div className="min-w-0">
-          <p className="tag text-paper/50">Editor</p>
+          <p className="tag text-paper-400">Editor</p>
           <h1 className="truncate font-display text-2xl text-paper">
             {detail.title ?? "Untitled"}
           </h1>
-          <p className="mt-1 truncate text-sm text-paper/45">{detail.prompt}</p>
+          <p className="mt-1 truncate text-sm text-paper-600">{detail.prompt}</p>
         </div>
         <Link
           href="/my-videos"
@@ -186,7 +186,7 @@ export function EditorView({ jobId }: { jobId: string }) {
               base.py
             </TabButton>
             {tab === "base" && (
-              <span className="ml-2 text-xs text-paper/35">read-only</span>
+              <span className="ml-2 text-xs text-paper-600">read-only</span>
             )}
             {tab === "scene" && dirty && (
               <span className="ml-2 text-xs text-highlight">edited</span>
@@ -219,7 +219,7 @@ export function EditorView({ jobId }: { jobId: string }) {
           )}
 
           <div className="flex items-center justify-between gap-3 border-t border-paper/10 px-4 py-3">
-            <span className="text-xs text-paper/40">
+            <span className="text-xs text-paper-600">
               {busy
                 ? `${status ?? "working"} · ${progress}%`
                 : dirty
@@ -234,7 +234,7 @@ export function EditorView({ jobId }: { jobId: string }) {
                   setProblem(null);
                 }}
                 disabled={busy || !dirty}
-                className="rounded-full px-4 py-2 text-sm text-paper/60 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30"
+                className="rounded-full px-4 py-2 text-sm text-paper-400 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30"
               >
                 Revert
               </button>
@@ -259,7 +259,7 @@ export function EditorView({ jobId }: { jobId: string }) {
               <video key={src} src={src} controls className="w-full" />
             ) : (
               <div className="flex aspect-video items-center justify-center">
-                <p className="text-sm text-paper/40">
+                <p className="text-sm text-paper-600">
                   {detail.status === "failed"
                     ? "This revision failed to render."
                     : "No video yet."}
@@ -278,7 +278,7 @@ export function EditorView({ jobId }: { jobId: string }) {
           )}
 
           <div className="rounded-3xl border border-paper/10 bg-paper/5 p-4">
-            <p className="tag mb-3 text-paper/45">Revisions</p>
+            <p className="tag mb-3 text-paper-600">Revisions</p>
             <ul className="flex flex-col gap-1">
               {revisions.map((rev, i) => {
                 const active = rev.id === currentId;
@@ -291,7 +291,7 @@ export function EditorView({ jobId }: { jobId: string }) {
                       className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed ${
                         active
                           ? "bg-paper/10 text-paper"
-                          : "text-paper/55 hover:bg-paper/5"
+                          : "text-paper-400 hover:bg-paper/5"
                       }`}
                     >
                       <span className="truncate">
@@ -304,7 +304,7 @@ export function EditorView({ jobId }: { jobId: string }) {
                         className={`shrink-0 text-xs ${
                           rev.status === "failed"
                             ? "text-red-300/80"
-                            : "text-paper/35"
+                            : "text-paper-600"
                         }`}
                       >
                         {rev.status}
@@ -318,8 +318,8 @@ export function EditorView({ jobId }: { jobId: string }) {
 
           {detail.narration_script && (
             <div className="rounded-3xl border border-paper/10 bg-paper/5 p-4">
-              <p className="tag mb-2 text-paper/45">Narration</p>
-              <p className="max-h-40 overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-paper/60">
+              <p className="tag mb-2 text-paper-600">Narration</p>
+              <p className="max-h-40 overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-paper-400">
                 {detail.narration_script}
               </p>
             </div>
@@ -344,7 +344,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={`rounded-lg px-3 py-1.5 font-mono text-xs transition-colors ${
-        active ? "bg-paper/10 text-paper" : "text-paper/45 hover:text-paper/70"
+        active ? "bg-paper/10 text-paper" : "text-paper-600 hover:text-paper"
       }`}
     >
       {children}

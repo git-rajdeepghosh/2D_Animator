@@ -57,6 +57,15 @@ def _render_and_store(db, job: Job, narration: str, scene_code: str) -> None:
         # Persist and finish.
         video_url = storage.store(job.id, final_path)
         duration = _probe_duration(final_path)
+
+        # Thumbnail for the library card. Optional: a missing poster falls back
+        # to a placeholder in the UI rather than failing a good render.
+        poster_path = _extract_poster(final_path)
+        poster_url = (
+            storage.store(job.id, poster_path, name="poster.jpg")
+            if poster_path
+            else None
+        )
     finally:
         # Scratch lives on a shared mount, so it survives the container and
         # would otherwise accumulate one scene + MP4 per job, forever.
@@ -64,7 +73,7 @@ def _render_and_store(db, job: Job, narration: str, scene_code: str) -> None:
 
     _advance(
         db, job, JobStatus.DONE, 100,
-        video_url=video_url, duration_seconds=duration,
+        video_url=video_url, duration_seconds=duration, poster_url=poster_url,
     )
 
 
@@ -129,6 +138,35 @@ def _add_voiceover(narration: str, video_path: str) -> str:
             return _mux(video_path, audio_path)
     except tts.TTSNotConfigured:
         return video_path
+
+
+def _extract_poster(video_path: str) -> str | None:
+    """Write a thumbnail frame next to the video; return its path, or None.
+
+    Deliberately *not* the literal first frame. A Manim scene opens on an empty
+    background and draws into it, so frame zero is a blank rectangle — the one
+    frame guaranteed to show nothing. ffmpeg's `thumbnail` filter instead scores
+    a window of frames against their average and picks the least typical one,
+    which lands on the scene after it has actually drawn something.
+
+    Best-effort: a video that has a poster looks better, but a job that
+    produced a watchable render should not fail because a still didn't encode.
+    """
+    out = str(Path(video_path).with_name("poster.jpg"))
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", video_path,
+                "-vf", "thumbnail",
+                "-frames:v", "1",
+                out,
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except (subprocess.CalledProcessError, OSError):
+        return None
+    return out if Path(out).is_file() else None
 
 
 def _probe_duration(path: str) -> float:

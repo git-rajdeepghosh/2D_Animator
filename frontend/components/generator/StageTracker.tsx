@@ -35,7 +35,7 @@ export function StageTracker({
             <li
               key={stage.key}
               className={`flex items-center gap-2 text-xs ${
-                state === "pending" ? "text-paper/30" : "text-paper/80"
+                state === "pending" ? "text-paper-600" : "text-paper"
               }`}
             >
               <span
