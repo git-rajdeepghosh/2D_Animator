@@ -81,6 +81,20 @@ const config: Config = {
           "0%": { transform: "translateX(-30%)" },
           "100%": { transform: "translateX(130%)" },
         },
+        // Ambient background motion. Deliberately long and small: the point is
+        // that the backdrop is never quite still, not that anything is moving.
+        driftA: {
+          "0%, 100%": { transform: "translate(0, 0)" },
+          "50%": { transform: "translate(3%, -4%)" },
+        },
+        driftB: {
+          "0%, 100%": { transform: "translate(0, 0)" },
+          "50%": { transform: "translate(-4%, 3%)" },
+        },
+        breathe: {
+          "0%, 100%": { opacity: "0.35", transform: "scale(1)" },
+          "50%": { opacity: "0.7", transform: "scale(1.06)" },
+        },
         pulseRing: {
           "0%": { transform: "scale(0.85)", opacity: "0.55" },
           "70%, 100%": { transform: "scale(1.35)", opacity: "0" },
@@ -95,6 +109,10 @@ const config: Config = {
         "orb-expand": "orbExpand 700ms cubic-bezier(0.6, 0, 0.9, 0.6) forwards",
         drift: "drift 6s ease-in-out infinite",
         sweep: "sweep 5s linear infinite",
+        "drift-a": "driftA 34s ease-in-out infinite",
+        "drift-b": "driftB 46s ease-in-out infinite",
+        breathe: "breathe 18s ease-in-out infinite",
+        "spin-slow": "spin 90s linear infinite",
         "pulse-ring": "pulseRing 2.8s ease-out infinite",
       },
     },

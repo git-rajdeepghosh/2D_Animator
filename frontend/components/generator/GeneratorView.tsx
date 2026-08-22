@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PlayGlyph } from "@/components/landing/PlayGlyph";
 import { StageTracker } from "@/components/generator/StageTracker";
+import { WorkSidebar } from "@/components/generator/WorkSidebar";
+import { AmbientField } from "@/components/AmbientField";
 import {
   createJob,
   getJob,
@@ -29,6 +31,9 @@ export function GeneratorView() {
   // Narrated voiceover. On by default; turning it off skips the TTS stage,
   // which makes the render finish sooner and cost slightly less.
   const [voiceover, setVoiceover] = useState(true);
+  // Bumped when a job reaches a terminal state, so the sidebar reloads and
+  // the video that was just made appears in the list.
+  const [sidebarKey, setSidebarKey] = useState(0);
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
   useEffect(() => () => unsubscribeRef.current?.(), []);
@@ -59,6 +64,9 @@ export function GeneratorView() {
           setPhase(update.status);
           setProgress(update.progress);
 
+          if (update.status === "done" || update.status === "failed") {
+            setSidebarKey((n) => n + 1);
+          }
           if (update.status === "failed") {
             setError(update.error ?? "The render failed. Please try again.");
           }
@@ -95,7 +103,12 @@ export function GeneratorView() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-ink">
+    <div className="flex min-h-screen bg-ink">
+      <WorkSidebar activeJobId={jobId} refreshKey={sidebarKey} />
+
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <AmbientField />
+
       <header className="border-b border-paper/10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
           <Link href="/" className="font-display text-2xl text-paper">
@@ -210,7 +223,8 @@ export function GeneratorView() {
             </div>
           </div>
         )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

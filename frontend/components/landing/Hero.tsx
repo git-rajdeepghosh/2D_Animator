@@ -41,7 +41,6 @@ import {
  */
 let hasPlayedThisLoad = false;
 
-const HOLD_MS = 2600;
 const EXPAND_MS = 640;
 
 type Phase = "intro" | "settle" | "docked" | "expanding";
@@ -57,8 +56,6 @@ export function Hero() {
   const [curtain] = useState(() => !hasPlayedThisLoad);
 
   const pathRef = useRef<SVGPathElement>(null);
-  const [focused, setFocused] = useState(false);
-  const [dockNonce, setDockNonce] = useState(0);
 
   const intro = phase === "intro";
   const docked = phase === "docked" || phase === "expanding";
@@ -153,14 +150,11 @@ export function Hero() {
     };
   }, [intro]);
 
-  /* Once settled, hold a beat and then dock into the corner. */
-  useEffect(() => {
-    if (phase !== "settle" || focused) return;
-    const timer = setTimeout(() => setPhase("docked"), HOLD_MS);
-    return () => clearTimeout(timer);
-  }, [phase, focused, dockNonce]);
-
-  /* Scrolling away also docks it — no reason to keep a bar mid-screen. */
+  /* Scrolling docks it — and only scrolling.
+     This used to also dock on a timer a couple of seconds after the intro
+     settled, which pulled the prompt out from under anyone still reading it.
+     The bar is the main call to action, so it now holds its place until the
+     reader actually moves down the page. */
   useEffect(() => {
     if (phase !== "settle") return;
     const onScroll = () => {
@@ -258,11 +252,6 @@ export function Hero() {
           type="text"
           placeholder="Describe the video you want to generate…"
           aria-label="Describe the video you want to generate"
-          onFocus={() => setFocused(true)}
-          onBlur={() => {
-            setFocused(false);
-            setDockNonce((n) => n + 1);
-          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") openGenerator();
           }}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { AmbientField } from "@/components/AmbientField";
 import {
   ApiError,
   fetchSceneBase,
@@ -158,7 +159,9 @@ export function EditorView({ jobId }: { jobId: string }) {
   const src = videoUrl(detail);
 
   return (
-    <main className="min-h-screen bg-ink pb-20">
+    <main className="relative min-h-screen bg-ink pb-20">
+      <AmbientField />
+
       <header className="flex items-center justify-between gap-4 px-6 py-6">
         <div className="min-w-0">
           <p className="tag text-paper-400">Editor</p>
