@@ -159,7 +159,7 @@ export function EditorView({ jobId }: { jobId: string }) {
   const src = videoUrl(detail);
 
   return (
-    <main className="relative min-h-screen bg-ink pb-20">
+    <main className="relative isolate min-h-screen bg-ink pb-20">
       <AmbientField />
 
       <header className="flex items-center justify-between gap-4 px-6 py-6">

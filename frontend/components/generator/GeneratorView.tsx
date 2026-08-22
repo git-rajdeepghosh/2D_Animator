@@ -106,7 +106,7 @@ export function GeneratorView() {
     <div className="flex min-h-screen bg-ink">
       <WorkSidebar activeJobId={jobId} refreshKey={sidebarKey} />
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      <div className="relative isolate flex min-w-0 flex-1 flex-col">
         <AmbientField />
 
       <header className="border-b border-paper/10">
