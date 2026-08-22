@@ -170,8 +170,11 @@ export function Hero() {
     setTimeout(() => router.push("/generator"), EXPAND_MS);
   }, [phase, router]);
 
+  /* The section sets no background of its own: the page wrapper supplies
+     bg-ink, and a background here would paint over the ambient backdrop
+     sitting behind it. */
   return (
-    <section id="top" className="relative min-h-screen overflow-hidden bg-ink">
+    <section id="top" className="relative min-h-screen overflow-hidden">
       {/* Curtain: hides the layout until the shape has covered the screen. */}
       {curtain && (
         <div

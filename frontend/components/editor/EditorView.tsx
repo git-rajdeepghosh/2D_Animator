@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import CodeMirror from "@uiw/react-codemirror";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { EditorView as CmView } from "@codemirror/view";
 import { python } from "@codemirror/lang-python";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { AmbientField } from "@/components/AmbientField";
@@ -21,6 +22,75 @@ import {
 type Tab = "scene" | "base";
 
 const TERMINAL = new Set(["done", "failed"]);
+
+/** Where in-progress edits are kept, per revision. */
+const draftKey = (jobId: string) => `2danimator:draft:${jobId}`;
+
+/**
+ * Line number of the failure inside the generated scene, if the traceback
+ * names one.
+ *
+ * The sandbox mounts the scene at /work/code/scene.py, and Manim's traceback
+ * includes frames from its own internals too — so this looks for the last
+ * frame in *our* file, which is the one whose line numbers match the editor.
+ */
+function failingLine(error: string | null | undefined): number | null {
+  if (!error) return null;
+  const matches = [...error.matchAll(/scene\.py",? line (\d+)/g)];
+  const last = matches.at(-1);
+  return last ? Number(last[1]) : null;
+}
+
+/**
+ * Fragments that use the helpers `base.py` actually provides.
+ *
+ * The barrier here is not typing speed, it is that most people have never
+ * written Manim — a palette of working lines turns "I can't write this" into
+ * "I can adjust this".
+ */
+const SNIPPETS: { label: string; code: string }[] = [
+  {
+    label: "Title",
+    code: `self.play(Write(self.title("Your title")))
+`,
+  },
+  {
+    label: "Caption",
+    code: `self.play(Write(self.caption("A short caption")))
+`,
+  },
+  {
+    label: "Shapes in a row",
+    code: `group = self.row(Circle(), Square(), Triangle())
+self.fit(group)
+self.play(Create(group))
+`,
+  },
+  {
+    label: "Stacked text",
+    code: `group = self.stack(Text("First"), Text("Second"), Text("Third"))
+self.fit(group)
+self.play(Write(group))
+`,
+  },
+  {
+    label: "Formula",
+    code: `formula = MathTex(r"a^2 + b^2 = c^2")
+self.fit(formula)
+self.play(Write(formula))
+`,
+  },
+  {
+    label: "New section",
+    code: `self.clear_stage()
+`,
+  },
+  {
+    label: "Pause",
+    code: `self.wait(1)
+`,
+  },
+];
 
 /**
  * `/editor` — the playground: the Manim source behind a video, editable and
@@ -46,6 +116,14 @@ export function EditorView({ jobId }: { jobId: string }) {
   const [status, setStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Mirrors the revision being viewed; a re-render can turn it off to skip
+  // TTS entirely, which makes iterating on scene code completely free.
+  const [voiceover, setVoiceover] = useState(true);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Needed to drive the editor imperatively: jumping to a line and
+  // inserting a snippet both act on the live CodeMirror view.
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
 
   // Cleanup for the in-flight progress socket, so unmounting mid-render (or
   // starting another render) doesn't leave one open.
@@ -56,10 +134,17 @@ export function EditorView({ jobId }: { jobId: string }) {
     try {
       const d = await getJobDetail(id);
       setDetail(d);
-      setCode(d.scene_code ?? "");
       setCurrentId(id);
+      setVoiceover(d.voiceover);
       setProblem(null);
       setLoadError(null);
+
+      // Prefer an unsaved draft over the saved code, so navigating away and
+      // back doesn't quietly discard work in progress.
+      const draft = window.localStorage.getItem(draftKey(id));
+      const saved = d.scene_code ?? "";
+      setCode(draft !== null && draft !== saved ? draft : saved);
+      setDraftRestored(draft !== null && draft !== saved);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load job");
     }
@@ -95,6 +180,46 @@ export function EditorView({ jobId }: { jobId: string }) {
     [code, detail],
   );
 
+  const errorLine = useMemo(() => failingLine(detail?.error), [detail?.error]);
+
+  // Keep unsaved edits across a reload or a wander to another page. Only a
+  // genuine divergence from the saved revision is stored, so returning to a
+  // clean revision doesn't leave a stale draft behind forever.
+  useEffect(() => {
+    if (!detail) return;
+    const key = draftKey(currentId);
+    if (dirty) window.localStorage.setItem(key, code);
+    else window.localStorage.removeItem(key);
+  }, [code, dirty, detail, currentId]);
+
+  /** Move the cursor to a line and bring it into view. */
+  const goToLine = useCallback((line: number) => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+    // A traceback can name a line past the end if the code was edited since
+    // the failure, so clamp rather than throw.
+    const target = view.state.doc.line(
+      Math.min(Math.max(line, 1), view.state.doc.lines),
+    );
+    view.dispatch({
+      selection: { anchor: target.from, head: target.to },
+      effects: CmView.scrollIntoView(target.from, { y: "center" }),
+    });
+    view.focus();
+  }, []);
+
+  /** Drop a fragment in at the cursor. */
+  const insertSnippet = useCallback((fragment: string) => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    view.dispatch({
+      changes: { from, to, insert: fragment },
+      selection: { anchor: from + fragment.length },
+    });
+    view.focus();
+  }, []);
+
   async function handleRender() {
     setBusy(true);
     setProblem(null);
@@ -103,7 +228,7 @@ export function EditorView({ jobId }: { jobId: string }) {
 
     let revision: Job;
     try {
-      revision = await rerenderJob(currentId, code);
+      revision = await rerenderJob(currentId, code, voiceover);
     } catch (err) {
       // 422 carries the validator's message; anything else is a real failure.
       setProblem(
@@ -192,12 +317,32 @@ export function EditorView({ jobId }: { jobId: string }) {
               <span className="ml-2 text-xs text-paper-600">read-only</span>
             )}
             {tab === "scene" && dirty && (
-              <span className="ml-2 text-xs text-highlight">edited</span>
+              <span className="ml-2 text-xs text-highlight">
+                edited{draftRestored ? " · draft restored" : ""}
+              </span>
             )}
           </div>
 
+          {tab === "scene" && (
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-paper/10 px-3 py-2">
+              <span className="mr-1 text-[11px] text-paper-600">Insert</span>
+              {SNIPPETS.map((snippet) => (
+                <button
+                  key={snippet.label}
+                  type="button"
+                  onClick={() => insertSnippet(snippet.code)}
+                  disabled={busy}
+                  className="rounded-full border border-paper/15 px-2.5 py-1 text-[11px] text-paper-400 transition-colors hover:border-paper/30 hover:text-paper disabled:opacity-40"
+                >
+                  {snippet.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {tab === "scene" ? (
             <CodeMirror
+              ref={editorRef}
               value={code}
               height="60vh"
               theme={oneDark}
@@ -230,6 +375,21 @@ export function EditorView({ jobId }: { jobId: string }) {
                   : "Renders as a new revision; this one is kept"}
             </span>
             <div className="flex items-center gap-2">
+              <label
+                title="Re-renders without narration skip text-to-speech entirely"
+                className={`flex cursor-pointer select-none items-center gap-1.5 text-xs transition-colors ${
+                  voiceover ? "text-paper-400" : "text-paper-600"
+                } ${busy ? "pointer-events-none opacity-50" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={voiceover}
+                  onChange={(e) => setVoiceover(e.target.checked)}
+                  disabled={busy}
+                  className="h-3.5 w-3.5 accent-highlight"
+                />
+                Voiceover
+              </label>
               <button
                 type="button"
                 onClick={() => {
@@ -273,7 +433,18 @@ export function EditorView({ jobId }: { jobId: string }) {
 
           {detail.error && (
             <div className="rounded-3xl border border-red-400/25 bg-red-400/5 p-4">
-              <p className="tag mb-2 text-red-300/70">Render error</p>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="tag text-red-300/70">Render error</p>
+                {errorLine !== null && (
+                  <button
+                    type="button"
+                    onClick={() => goToLine(errorLine)}
+                    className="text-xs font-medium text-red-200 underline underline-offset-2 transition-opacity hover:opacity-70"
+                  >
+                    Go to line {errorLine}
+                  </button>
+                )}
+              </div>
               <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-red-200/90">
                 {detail.error}
               </pre>
